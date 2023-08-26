@@ -5,7 +5,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/go-playground/validator/v10"
+	"github.com/3JoB/validator"
 	"gopkg.in/yaml.v3"
 
 	"github.com/3JoB/teler-waf/request"

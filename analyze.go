@@ -3,25 +3,26 @@ package teler
 import (
 	"errors"
 	"fmt"
-	"net/http"
 	"net/url"
 	"strings"
 
 	"github.com/grafana/regexp"
+	"github.com/savsgio/atreugo/v11"
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/net/publicsuffix"
 
 	"github.com/3JoB/teler-waf/request"
 	"github.com/3JoB/teler-waf/threat"
+	"github.com/3JoB/unsafeConvert"
 )
 
 // Analyze runs the actual checks.
-func (t *Teler) Analyze(w http.ResponseWriter, r *http.Request) error {
-	_, err := t.analyzeRequest(w, r)
+func (t *Teler) Analyze(c *atreugo.RequestCtx) error {
+	_, err := t.analyzeRequest(c)
 
 	// If threat detected, set teler request ID to the header
 	if err != nil {
-		setReqIdHeader(w)
+		setReqIdHeader(c)
 	}
 
 	return err
@@ -56,14 +57,14 @@ The types of threats that are checked for are:
 - Bad crawlers
 - Directory bruteforce attacks
 */
-func (t *Teler) analyzeRequest(w http.ResponseWriter, r *http.Request) (threat.Threat, error) {
+func (t *Teler) analyzeRequest(c *atreugo.RequestCtx) (threat.Threat, error) {
 	var err error
 
 	// Initialize DSL requests environment
-	t.setDSLRequestEnv(r)
+	t.setDSLRequestEnv(c)
 
 	// Check the request against custom rules
-	if err = t.checkCustomRules(r); err != nil {
+	if err = t.checkCustomRules(c); err != nil {
 		return threat.Custom, err
 	}
 
@@ -83,17 +84,17 @@ func (t *Teler) analyzeRequest(w http.ResponseWriter, r *http.Request) (threat.T
 		// Check for the threat type specified by the key in the excludes map
 		switch k {
 		case threat.CommonWebAttack:
-			err = t.checkCommonWebAttack(r) // Check for common web attacks
+			err = t.checkCommonWebAttack(c) // Check for common web attacks
 		case threat.CVE:
-			err = t.checkCVE(r) // Check for Common Vulnerabilities and Exposures (CVEs)
+			err = t.checkCVE(c) // Check for Common Vulnerabilities and Exposures (CVEs)
 		case threat.BadIPAddress:
-			err = t.checkBadIPAddress(r) // Check for bad IP addresses
+			err = t.checkBadIPAddress() // Check for bad IP addresses
 		case threat.BadReferrer:
-			err = t.checkBadReferrer(r) // Check for bad referrers
+			err = t.checkBadReferrer(c) // Check for bad referrers
 		case threat.BadCrawler:
-			err = t.checkBadCrawler(r) // Check for bad crawlers
+			err = t.checkBadCrawler(c) // Check for bad crawlers
 		case threat.DirectoryBruteforce:
-			err = t.checkDirectoryBruteforce(r) // Check for directory bruteforce attacks
+			err = t.checkDirectoryBruteforce(c) // Check for directory bruteforce attacks
 		}
 
 		// If a threat is detected, return the threat type and an error
@@ -109,7 +110,7 @@ func (t *Teler) analyzeRequest(w http.ResponseWriter, r *http.Request) (threat.T
 // checkCustomRules checks the given http.Request against a set of custom rules defined in the Teler struct.
 // If any of the custom rules are violated, the function returns an error with the name of the violated rule as the message.
 // If no custom rules are violated, the function returns nil.
-func (t *Teler) checkCustomRules(r *http.Request) error {
+func (t *Teler) checkCustomRules(c *atreugo.RequestCtx) error {
 	// Declare headers, URI, and body of a request.
 	headers := t.env.GetRequestValue("Headers")
 	uri := t.env.GetRequestValue("URI")
@@ -146,7 +147,7 @@ func (t *Teler) checkCustomRules(r *http.Request) error {
 			switch {
 			case cond.Method == request.ALL:
 				ok = true
-			case string(cond.Method) == r.Method:
+			case string(cond.Method) == unsafeConvert.StringSlice(c.Method()):
 				ok = true
 			}
 
@@ -206,10 +207,10 @@ func (t *Teler) checkCustomRules(r *http.Request) error {
 // checkCommonWebAttack checks if the request contains any patterns that match the common web attacks data.
 // If a match is found, it returns an error indicating a common web attack has been detected.
 // If no match is found, it returns nil.
-func (t *Teler) checkCommonWebAttack(r *http.Request) error {
+func (t *Teler) checkCommonWebAttack(c *atreugo.RequestCtx) error {
 	// Decode the URL-encoded and unescape HTML entities in the
 	// request URI of the URL then remove all special characters
-	uri := removeSpecialChars(stringDeUnescape(r.URL.RequestURI()))
+	uri := removeSpecialChars(stringDeUnescape(unsafeConvert.StringSlice(c.URI().FullURI())))
 
 	// Declare body of request then remove all special characters
 	body := removeSpecialChars(t.env.GetRequestValue("Body"))
@@ -260,7 +261,7 @@ func (t *Teler) checkCommonWebAttack(r *http.Request) error {
 // Common Vulnerabilities and Exposures (CVE) threat.
 // It takes a pointer to an HTTP request as an input and returns an error if the request
 // matches a known threat. Otherwise, it returns nil.
-func (t *Teler) checkCVE(r *http.Request) error {
+func (t *Teler) checkCVE(c *atreugo.RequestCtx) error {
 	// data is the set of templates to check against.
 	cveData := t.threat.cve
 
@@ -270,7 +271,12 @@ func (t *Teler) checkCVE(r *http.Request) error {
 	// requestParams is a map that stores the query parameters of the request URI and
 	// iterate over the query parameters of the request URI and add them to the map.
 	requestParams := make(map[string]string)
-	for q, v := range r.URL.Query() {
+
+	prul, err := url.Parse(unsafeConvert.StringSlice(c.URI().FullURI()))
+	if err != nil {
+		return err
+	}
+	for q, v := range prul.Query() {
 		requestParams[q] = v[0]
 	}
 
@@ -303,7 +309,7 @@ func (t *Teler) checkCVE(r *http.Request) error {
 			}
 
 			// If the template is a "path" type and the request method doesn't match, skip this template.
-			if kind == "path" && string(request.GetStringBytes("method")) != r.Method {
+			if kind == "path" && unsafeConvert.StringSlice(request.GetStringBytes("method")) != unsafeConvert.StringSlice(c.Method()) {
 				continue
 			}
 
@@ -315,7 +321,8 @@ func (t *Teler) checkCVE(r *http.Request) error {
 				}
 
 				// If the request path doesn't match the CVE path, skip this CVE URL.
-				if r.URL.Path != cve.Path {
+
+				if unsafeConvert.StringSlice(c.URI().Path()) != cve.Path {
 					continue
 				}
 
@@ -358,7 +365,7 @@ func (t *Teler) checkCVE(r *http.Request) error {
 // checkBadIPAddress checks if the client IP address is in the BadIPAddress index.
 // It returns an error if the client IP address is found in the index, indicating a bad IP address.
 // Otherwise, it returns nil.
-func (t *Teler) checkBadIPAddress(r *http.Request) error {
+func (t *Teler) checkBadIPAddress() error {
 	// Get the client's IP address
 	clientIP := t.env.GetRequestValue("IP")
 
@@ -395,9 +402,10 @@ func (t *Teler) checkBadIPAddress(r *http.Request) error {
 // The resulting domain is then checked against the BadReferrer index in the threat struct.
 // If the domain is found in the index, an error indicating a bad HTTP referer is returned.
 // Otherwise, nil is returned.
-func (t *Teler) checkBadReferrer(r *http.Request) error {
+func (t *Teler) checkBadReferrer(c *atreugo.RequestCtx) error {
 	// Parse the request referer URL
-	ref, err := url.Parse(r.Referer())
+
+	ref, err := url.Parse(unsafeConvert.StringSlice(c.Referer()))
 	if err != nil {
 		t.error(zapcore.ErrorLevel, err.Error())
 		return nil
@@ -450,9 +458,9 @@ func (t *Teler) checkBadReferrer(r *http.Request) error {
 // it returns an error with the message "bad crawler".
 // If the User-Agent is empty or no regular expressions match,
 // it returns nil.
-func (t *Teler) checkBadCrawler(r *http.Request) error {
+func (t *Teler) checkBadCrawler(c *atreugo.RequestCtx) error {
 	// Retrieve the User-Agent from the request
-	ua := r.UserAgent()
+	ua := unsafeConvert.StringSlice(c.UserAgent())
 
 	// Do not process the check if User-Agent is empty
 	if ua == "" {
@@ -504,10 +512,10 @@ func (t *Teler) checkBadCrawler(r *http.Request) error {
 // is found, it returns an error indicating a directory bruteforce attack has been
 // detected. If no match is found or there was an error during the regex matching
 // process, it returns nil.
-func (t *Teler) checkDirectoryBruteforce(r *http.Request) error {
+func (t *Teler) checkDirectoryBruteforce(c *atreugo.RequestCtx) error {
 	// Trim the leading slash from the request path, and if path
 	// is empty string after the trim, do not process the check
-	path := strings.TrimLeft(r.URL.Path, "/")
+	path := strings.TrimLeft(unsafeConvert.StringSlice(c.URI().Path()), "/")
 	if path == "" {
 		return nil
 	}

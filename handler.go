@@ -1,25 +1,27 @@
 package teler
 
 import (
-	"net/http"
+	"github.com/3JoB/unsafeConvert"
+	"github.com/savsgio/atreugo/v11"
 
 	"github.com/valyala/fasttemplate"
 )
 
 // rejectHandler is default rejection handler
-func rejectHandler(w http.ResponseWriter, r *http.Request) {
+func rejectHandler(c *atreugo.RequestCtx) error {
 	// Set Content-Type to text/html
-	w.Header().Set("Content-Type", "text/html")
+	c.Response.Header.Set("Content-Type", "text/html")
 
 	// Set the status code
-	w.WriteHeader(respStatus)
+	c.SetStatusCode(respStatus)
 
 	// Set template interfaces
+
 	data := map[string]any{
 		// NOTE(dwisiswant0): Should we include *http.Request?
-		"ID":      w.Header().Get(xTelerReqId),
-		"message": w.Header().Get(xTelerMsg),
-		"threat":  w.Header().Get(xTelerThreat),
+		"ID":      unsafeConvert.StringSlice(c.Response.Header.Peek(xTelerReqId)),
+		"message": unsafeConvert.StringSlice(c.Response.Header.Peek(xTelerMsg)),
+		"threat":  unsafeConvert.StringSlice(c.Response.Header.Peek(xTelerThreat)),
 	}
 
 	// Use custom response HTML page template if non-empty
@@ -32,45 +34,37 @@ func rejectHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Write a response from the template
 	// TODO(dwisiswant0): Add error handling here.
-	_, _ = tpl.Execute(w, data)
-}
-
-// SetHandler sets the handler to call when the teler rejects a request.
-func (t *Teler) SetHandler(handler http.Handler) {
-	t.handler = handler
+	_, _ = tpl.Execute(c.Response.BodyWriter(), data)
+	return nil
 }
 
 // Handler implements the http.HandlerFunc for integration with the standard net/http library.
-func (t *Teler) Handler(h http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func (t *Teler) Handler(next atreugo.View) atreugo.View {
+	return func(c *atreugo.RequestCtx) error {
 		// Let teler analyze the request. If it returns an error,
 		// that indicates the request should not continue.
-		k, err := t.analyzeRequest(w, r)
+		k, err := t.analyzeRequest(c)
 		if err != nil {
 			// Process the analyzeRequest
-			t.postAnalyze(w, r, k, err)
-
-			return
+			t.postAnalyze(c, k, err)
+			return nil
 		}
-
-		h.ServeHTTP(w, r)
-	})
+		return next(c)
+	}
 }
 
 // HandlerFuncWithNext is a special implementation for Negroni, but could be used elsewhere.
-func (t *Teler) HandlerFuncWithNext(w http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
+func (t *Teler) HandlerFuncWithNext(c *atreugo.RequestCtx, next atreugo.View) {
 	// Let teler analyze the request. If it returns an error,
 	// that indicates the request should not continue.
-	k, err := t.analyzeRequest(w, r)
+	k, err := t.analyzeRequest(c)
 	if err != nil {
 		// Process the analyzeRequest
-		t.postAnalyze(w, r, k, err)
-
+		t.postAnalyze(c, k, err)
 		return
 	}
-
 	// If next handler is not nil, call it.
 	if next != nil {
-		next(w, r)
+		next(c)
 	}
 }

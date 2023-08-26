@@ -34,6 +34,7 @@ import (
 	"github.com/grafana/regexp"
 	"github.com/klauspost/compress/zstd"
 	"github.com/patrickmn/go-cache"
+	"github.com/savsgio/atreugo/v11"
 	"github.com/valyala/fastjson"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -41,6 +42,7 @@ import (
 	"github.com/3JoB/teler-waf/dsl"
 	"github.com/3JoB/teler-waf/request"
 	"github.com/3JoB/teler-waf/threat"
+	"github.com/3JoB/unsafeConvert"
 )
 
 // Threat defines what threat category should be excluded
@@ -82,8 +84,8 @@ type Teler struct {
 	// threat is a Threat struct.
 	threat *Threat
 
-	// handler is the http.Handler that the Teler middleware wraps.
-	handler http.Handler
+	// handler is the atreugo.View that the Teler middleware wraps.
+	handler atreugo.View
 
 	// wlPrograms is a slice of compiled DSL expression as a program pointers
 	// that are used to check whether a request should be whitelisted.
@@ -113,7 +115,7 @@ func New(opts ...Options) *Teler {
 
 	// Create a new Teler struct and initialize its handler and threat fields
 	t := &Teler{
-		handler: http.HandlerFunc(rejectHandler),
+		handler: atreugo.View(rejectHandler),
 		threat:  &Threat{},
 	}
 
@@ -319,44 +321,45 @@ func New(opts ...Options) *Teler {
 
 // postAnalyze is a function that processes the HTTP response after
 // an error is returned from the analyzeRequest function.
-func (t *Teler) postAnalyze(w http.ResponseWriter, r *http.Request, k threat.Threat, err error) {
+func (t *Teler) postAnalyze(c *atreugo.RequestCtx, k threat.Threat, err error) {
 	// If there is no error, return early.
 	if err == nil {
 		return
 	}
 
 	// Set teler request ID to the header
-	id := setReqIdHeader(w)
+	id := setReqIdHeader(c)
 
 	// Get the error message & convert to string as a message
 	msg := err.Error()
 
 	// Set custom headers
-	setCustomHeaders(w, msg, k)
+	setCustomHeaders(c, msg, k)
 
 	// Send the logs
 	t.sendLogs(r, k, id, msg)
 
 	// Serve the reject handler
-	t.handler.ServeHTTP(w, r)
+	t.handler(c)
 }
 
-func (t *Teler) sendLogs(r *http.Request, k threat.Threat, id string, msg string) {
+func (t *Teler) sendLogs(r *http.Request,c *atreugo.RequestCtx,  k threat.Threat, id string, msg string) {
 	// Declare request body, threat category, URL path, and remote IP address.
 	body := t.env.GetRequestValue("Body")
 	cat := k.String()
-	path := r.URL.String()
+	path := unsafeConvert.StringSlice(c.URI().FullURI())
 	ipAddr := t.env.GetRequestValue("IP")
+	method := unsafeConvert.StringSlice(c.Method())
 
 	// Log the detected threat, request details and the error message.
 	t.log.With(
 		zap.String("id", id),
 		zap.String("category", cat),
 		zap.Namespace("request"),
-		zap.String("method", r.Method),
+		zap.String("method", method),
 		zap.String("path", path),
 		zap.String("ip_addr", ipAddr),
-		zap.Any("headers", r.Header),
+		zap.Any("headers", unsafeConvert.StringSlice(c.Request.Header.Header())),
 		zap.String("body", body),
 	).Warn(msg)
 
@@ -365,7 +368,11 @@ func (t *Teler) sendLogs(r *http.Request, k threat.Threat, id string, msg string
 	}
 
 	// Forward the detected threat to FalcoSidekick instance
-	jsonHeaders, err := json.Marshal(r.Header)
+	headers := make(map[string]string)
+	c.Request.Header.VisitAll(func(k, v []byte) {
+		headers[unsafeConvert.StringSlice(k)] = unsafeConvert.StringSlice(v) 
+	})
+	jsonHeaders, err := json.Marshal(headers)
 	if err != nil {
 		t.error(zapcore.PanicLevel, err.Error())
 	}
@@ -377,7 +384,7 @@ func (t *Teler) sendLogs(r *http.Request, k threat.Threat, id string, msg string
 	data := map[string]any{
 		"output": fmt.Sprintf(
 			"%s: %s at %s by %s (caller=%s threat=%s id=%s)",
-			now.Format("15:04:05.000000000"), msg, r.URL.Path, ipAddr, t.caller, cat, id),
+			now.Format("15:04:05.000000000"), msg, unsafeConvert.StringSlice(c.URI().Path()), ipAddr, t.caller, cat, id),
 		"priority": "Warning",
 		"rule":     msg,
 		"time":     now.Format("2006-01-02T15:04:05.999999999Z"),
@@ -385,11 +392,11 @@ func (t *Teler) sendLogs(r *http.Request, k threat.Threat, id string, msg string
 			"teler.caller":    t.caller,
 			"teler.id":        id,
 			"teler.threat":    cat,
-			"request.method":  r.Method,
+			"request.method":  method,
 			"request.path":    path,
 			"request.ip_addr": ipAddr,
-			"request.headers": string(jsonHeaders),
-			"request.body":    string(body),
+			"request.headers": unsafeConvert.StringSlice(jsonHeaders),
+			"request.body":    body,
 		},
 	}
 	payload, err := json.Marshal(data)

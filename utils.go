@@ -1,17 +1,14 @@
 package teler
 
 import (
-	"bytes"
 	"errors"
-	"fmt"
 	"html"
-	"io"
-	"net/http"
 	"strings"
 
+	realip "github.com/3JoB/atreugo-realip"
 	"github.com/antonmedv/expr/vm"
-	"github.com/dwisiswant0/clientip"
 	"github.com/patrickmn/go-cache"
+	"github.com/savsgio/atreugo/v11"
 	"github.com/twharmon/gouid"
 	"gitlab.com/golang-commonmark/mdurl"
 	"go.uber.org/zap"
@@ -19,6 +16,7 @@ import (
 
 	"github.com/3JoB/teler-waf/request"
 	"github.com/3JoB/teler-waf/threat"
+	"github.com/3JoB/unsafeConvert"
 )
 
 // inThreatIndex checks if the given substring is in specific threat datasets
@@ -31,37 +29,20 @@ func (t *Teler) inThreatIndex(kind threat.Threat, substr string) bool {
 }
 
 // setDSLRequestEnv will set DSL environment based on the incoming request information.
-func (t *Teler) setDSLRequestEnv(r *http.Request) {
+func (t *Teler) setDSLRequestEnv(c *atreugo.RequestCtx) {
 	// Converts map of headers to RAW string
-	headers := headersToRawString(r.Header)
+	headers := headersToRawString(c)
 
 	// Decode the URL-encoded and unescape HTML entities request URI of the URL
-	uri := stringDeUnescape(r.URL.RequestURI())
+	uri := stringDeUnescape(unsafeConvert.StringSlice(c.RequestURI()))
 
 	// Declare byte slice for request body.
 	var body string
 
 	// Check if the request has a body
-	if r.Body != nil {
-		// Initialize buffer to hold request body.
-		buf := &bytes.Buffer{}
-
-		// NOTE(dwisiswant0): I think we should limit the r.Body
-		// reader (w/ io.LimitedReader) before copying it.
-
-		// Use io.Copy to copy the request body to the buffer.
-		_, err := io.Copy(buf, r.Body)
-		if err == nil {
-			// If the read not fails, replace the request body
-			// with a new io.ReadCloser that reads from the buffer.
-			r.Body = io.NopCloser(buf)
-
-			// Convert the buffer to a string.
-			body = buf.String()
-		}
-
+	if c.Request.Body() != nil {
 		// Decode the URL-encoded and unescape HTML entities of body
-		body = stringDeUnescape(body)
+		body = stringDeUnescape(unsafeConvert.StringSlice(c.Request.Body()))
 	}
 
 	// Set DSL requests environment
@@ -69,8 +50,8 @@ func (t *Teler) setDSLRequestEnv(r *http.Request) {
 		"URI":     uri,
 		"Headers": headers,
 		"Body":    body,
-		"Method":  r.Method,
-		"IP":      clientip.FromRequest(r).String(),
+		"Method":  unsafeConvert.StringSlice(c.Method()),
+		"IP":      realip.FromRequest(c),
 	}
 }
 
@@ -91,20 +72,8 @@ func (t *Teler) setDSLRequestEnv(r *http.Request) {
 //	Accept-Language: en-us
 //	fOO: Bar
 //	foo: two
-func headersToRawString(headers http.Header) string {
-	var h strings.Builder
-
-	// Iterate over the request headers and append each key-value pair to the builder
-	for key, values := range headers {
-		for _, value := range values {
-			h.WriteString(
-				fmt.Sprintf("%s: %s\n", toURLDecode(key), toURLDecode(value)),
-			)
-		}
-	}
-
-	// Returns the accumulated string of builder
-	return h.String()
+func headersToRawString(c *atreugo.RequestCtx) string {
+	return unsafeConvert.StringSlice(c.Request.Header.Header())
 }
 
 // unescapeHTML to unescapes any HTML entities, i.e. &aacute;"
@@ -153,20 +122,19 @@ func normalizeRawStringReader(raw string) *strings.Reader {
 }
 
 // setCustomHeader such as message and threat category to the header response
-func setCustomHeaders(w http.ResponseWriter, msg string, cat threat.Threat) {
+func setCustomHeaders(c *atreugo.RequestCtx, msg string, cat threat.Threat) {
 	// Set the "X-Teler-Msg" and "X-Teler-Threat" header in the response
-	w.Header().Set(xTelerMsg, msg)
-	w.Header().Set(xTelerThreat, cat.String())
+	c.Response.Header.Set(xTelerMsg, msg)
+	c.Response.Header.Set(xTelerThreat, cat.String())
 }
 
 // setReqIdHeader to set teler request ID header response
-func setReqIdHeader(w http.ResponseWriter) string {
+func setReqIdHeader(c *atreugo.RequestCtx) string {
 	// Generate a unique ID using the gouid package.
 	id := gouid.Bytes(10)
 
 	// Set the "X-Teler-Req-Id" header in the response with the unique ID.
-	w.Header().Set(xTelerReqId, id.String())
-
+	c.Response.Header.Set(xTelerReqId, id.String())
 	return id.String()
 }
 
