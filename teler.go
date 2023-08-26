@@ -30,6 +30,7 @@ import (
 
 	"github.com/3JoB/unsafeConvert"
 	"github.com/antonmedv/expr/vm"
+	"github.com/dlclark/regexp2"
 	"github.com/goccy/go-json"
 	"github.com/grafana/regexp"
 	"github.com/klauspost/compress/zstd"
@@ -60,7 +61,7 @@ type Threat struct {
 	data map[threat.Threat]string
 
 	// badCrawler contains the compiled slices of pointers to regexp.Regexp
-	// and pcre.Matcher objects of BadCrawler threat data as interface.
+	// and regexp2.Regexp (Use RE2 Engine) objects of BadCrawler threat data as interface.
 	badCrawler []any
 
 	// cve contains the compiled JSON CVEs data of pointers to fastjson.Value
@@ -569,7 +570,14 @@ func (t *Teler) processResource(k threat.Threat) error {
 			// Compile the filter rule as a regular expression
 			t.threat.cwa.Filters[i].pattern, err = regexp.Compile(filter.Rule) // nosemgrep: trailofbits.go.questionable-assignment.questionable-assignment
 			if err != nil {
-				return err
+				// If the regular expression cannot be compiled,
+				// try to compile it as a PCRE pattern
+				re2, err := regexp2.Compile(filter.Rule, regexp2.RE2)
+				if err == nil {
+					// If the PCRE pattern is successfully compiled,
+					// create a new Matcher and assign it to the pattern field
+					t.threat.cwa.Filters[i].pattern = re2
+				}
 			}
 		}
 	case threat.CVE:
@@ -645,7 +653,14 @@ func (t *Teler) processResource(k threat.Threat) error {
 		for i, pattern := range patterns {
 			t.threat.badCrawler[i], err = regexp.Compile(pattern)
 			if err != nil {
-				return err
+				// If the regular expression cannot be compiled,
+				// try to compile it as a Regexp2 pattern
+				re2, err := regexp2.Compile(pattern, regexp2.RE2)
+				if err == nil {
+					// If the PCRE pattern is successfully compiled,
+					// create a new Matcher and assign it to the pattern field
+					t.threat.badCrawler[i] = re2
+				}
 			}
 		}
 	}

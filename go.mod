@@ -8,6 +8,7 @@ require (
 	github.com/3JoB/validator v0.0.1
 	github.com/antonmedv/expr v1.14.3
 	github.com/daniel-hutao/spinlock v0.1.0
+	github.com/dlclark/regexp2 v1.10.0
 	github.com/goccy/go-json v0.10.2
 	github.com/grafana/regexp v0.0.0-20221122212121-6b5c0a4cb7fd
 	github.com/hashicorp/go-getter v1.7.2

@@ -70,7 +70,7 @@ import "github.com/3JoB/teler-waf"
 waf := teler.New()
 ```
 
-3. Use the `Handler` method of the `Teler` instance to create a `net/http.Handler`. This handler can then be used in your application's HTTP routing to apply teler-waf's security measures to specific routes.
+3. Use the `Handler` method of the `Teler` instance to create a `atreugo.View`. This handler can then be used in your application's HTTP routing to apply teler-waf's security measures to specific routes.
 
 ```go
 handler := waf.Handler(http.HandlerFunc(yourHandlerFunc))

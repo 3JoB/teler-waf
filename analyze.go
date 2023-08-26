@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/3JoB/unsafeConvert"
+	"github.com/dlclark/regexp2"
 	"github.com/grafana/regexp"
 	"github.com/savsgio/atreugo/v11"
 	"go.uber.org/zap/zapcore"
@@ -238,6 +239,10 @@ func (t *Teler) checkCommonWebAttack(c *atreugo.RequestCtx) error {
 		switch pattern := filter.pattern.(type) {
 		case *regexp.Regexp: // If the pattern is a regex
 			match = pattern.MatchString(uri) || pattern.MatchString(body)
+		case *regexp2.Regexp: // If the pattern is a regex2 expr
+			d, _ := pattern.MatchString(uri)
+			p, _ := pattern.MatchString(body)
+			match = d || p
 		default: // If the pattern is of an unknown type, skip to the next iteration
 			continue
 		}
