@@ -16,6 +16,7 @@ package teler
 import (
 	"archive/tar"
 	"bufio"
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
@@ -312,8 +313,7 @@ func New(opts ...Options) *Teler {
 	t.opt = o
 
 	// Retrieve the data for each threat category
-	err = t.getResources()
-	if err != nil {
+	if err = t.getResources(); err != nil {
 		t.error(zapcore.PanicLevel, fmt.Sprintf(errResources, err))
 	}
 
@@ -448,18 +448,32 @@ func (t *Teler) getResources() error {
 	// from the DB URL and uncompress it from Zstandard format, then extract the contents of
 	// each file from the tar archive and store them in a map indexed by their file name
 	if t.opt.InMemory {
+		req := fasthttp.AcquireRequest()
+		defer fasthttp.ReleaseRequest(req)
+		req.Header.SetMethod(fasthttp.MethodGet)
+		req.SetRequestURI(threat.DbURL)
+
+		res := fasthttp.AcquireResponse()
+		defer fasthttp.ReleaseResponse(res)
+
+		if err := fasthttp.Do(req, res); err != nil {
+			return err
+		}
 		resp, err := http.Get(threat.DbURL)
 		if err != nil {
 			return err
 		}
 		defer resp.Body.Close()
 
-		zstdReader, err := zstd.NewReader(resp.Body)
+		var buf *bytes.Buffer
+		buf.Write(res.Body())
+
+		zstdReader, err := zstd.NewReader(buf)
 		if err != nil {
 			return err
 		}
 		defer zstdReader.Close()
-
+		defer buf.Reset()
 		tarReader := tar.NewReader(zstdReader)
 
 		for {

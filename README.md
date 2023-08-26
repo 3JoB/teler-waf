@@ -39,6 +39,11 @@ teler-waf offers a range of powerful features designed to enhance the security o
 
 Overall, teler-waf provides a comprehensive security solution for Go-based web applications, helping to protect against web-based attacks and improve the overall security and integrity of your application.
 
+## About This Branch
+This branch has been modified to support the version of atreugo under the fasthttp framework.
+
+
+
 ## Install
 
 **Dependencies**:
@@ -91,7 +96,7 @@ Here is an example of how to customize the options and rules for teler-waf:
 package main
 
 import (
-	"net/http"
+	"github.com/savsgio/atreugo/v11"
 
 	"github.com/3JoB/teler-waf"
 	"github.com/3JoB/teler-waf/request"
@@ -172,12 +177,21 @@ func main() {
 	// and pass in the myHandler function for the route we want to protect.
 	app := telerMiddleware.Handler(myHandler)
 
-	// Use the app handler as the handler for the route.
-	http.ListenAndServe("127.0.0.1:3000", app)
+	config := atreugo.Config{
+		Addr:         "127.0.0.1:13342",
+	}
+	server := atreugo.New(config)
+	server.GET("/", app)
+
+	if err := server.ListenAndServe(); err != nil {
+		panic(err)
+	}
 }
 ```
 
 For more examples of how to use teler-waf or integrate it with any framework, take a look at [examples/](https://github.com/3JoB/teler-waf/tree/master/examples) directory.
+
+But I still want to remind you that the examples have not been updated, they are still old examples of net.http.
 
 ### Custom Rules
 
@@ -455,7 +469,7 @@ Here are some limitations of using teler-waf:
 $ go test -bench . -cpu=4
 goos: linux
 goarch: amd64
-pkg: github.com/3JoB/teler-waf
+pkg: github.com/kitabisa/teler-waf
 cpu: 11th Gen Intel(R) Core(TM) i9-11900H @ 2.50GHz
 BenchmarkTelerDefaultOptions-4               	   45321	     27209 ns/op	    6551 B/op	      94 allocs/op
 BenchmarkTelerCommonWebAttackOnly-4          	   46386	     28901 ns/op	    5977 B/op	      88 allocs/op
