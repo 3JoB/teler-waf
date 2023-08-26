@@ -8,7 +8,11 @@ Options struct for further processing.
 */
 package option
 
-import "github.com/3JoB/teler-waf"
+import (
+	"github.com/3JoB/unsafeConvert"
+
+	"github.com/3JoB/teler-waf"
+)
 
 // LoadFromJSONBytes to unmarshal the teler-waf JSON
 // bytes configuration into the [teler.Options] struct.
@@ -20,7 +24,7 @@ func LoadFromJSONBytes(raw []byte) (teler.Options, error) {
 // LoadFromJSONString to unmarshal the teler-waf JSON
 // string configuration into the [teler.Options] struct.
 func LoadFromJSONString(raw string) (teler.Options, error) {
-	return LoadFromJSONBytes([]byte(raw))
+	return LoadFromJSONBytes(unsafeConvert.ByteSlice(raw))
 }
 
 // LoadFromJSONFile to unmarshal the teler-waf JSON
@@ -46,7 +50,7 @@ func LoadFromYAMLBytes(raw []byte) (teler.Options, error) {
 // LoadFromYAMLFile to unmarshal the teler-waf YAML
 // string configuration into the [teler.Options] struct.
 func LoadFromYAMLString(raw string) (teler.Options, error) {
-	return LoadFromYAMLBytes([]byte(raw))
+	return LoadFromYAMLBytes(unsafeConvert.ByteSlice(raw))
 }
 
 // LoadFromYAMLFile to unmarshal the teler-waf YAML

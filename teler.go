@@ -28,6 +28,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/3JoB/unsafeConvert"
 	"github.com/antonmedv/expr/vm"
 	"github.com/goccy/go-json"
 	"github.com/grafana/regexp"
@@ -42,7 +43,6 @@ import (
 	"github.com/3JoB/teler-waf/dsl"
 	"github.com/3JoB/teler-waf/request"
 	"github.com/3JoB/teler-waf/threat"
-	"github.com/3JoB/unsafeConvert"
 )
 
 // Threat defines what threat category should be excluded
@@ -297,7 +297,7 @@ func New(opts ...Options) *Teler {
 			t.error(zapcore.PanicLevel, err.Error())
 		}
 
-		customHTMLResponse = string(f)
+		customHTMLResponse = unsafeConvert.StringSlice(f)
 	}
 
 	// If customHTMLResponse is still empty (no custom HTML response was provided),
@@ -537,7 +537,7 @@ func (t *Teler) getResources() error {
 		}
 
 		// Store the threat dataset contents in Threat struct as a string
-		t.threat.data[k] = string(b)
+		t.threat.data[k] = unsafeConvert.StringSlice(b)
 
 		err = t.processResource(k)
 		if err != nil {
@@ -559,7 +559,7 @@ func (t *Teler) processResource(k threat.Threat) error {
 		t.threat.cwa = &cwa{}
 
 		// Unmarshal the data into the cwa field.
-		err = json.Unmarshal([]byte(t.threat.data[k]), &t.threat.cwa)
+		err = json.Unmarshal(unsafeConvert.ByteSlice(t.threat.data[k]), &t.threat.cwa)
 		if err != nil {
 			return err
 		}

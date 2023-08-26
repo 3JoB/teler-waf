@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 
+	"github.com/3JoB/unsafeConvert"
 	"github.com/3JoB/validator"
 	"gopkg.in/yaml.v3"
 
@@ -33,7 +34,7 @@ func validateYAMLRules(fl validator.FieldLevel) bool {
 
 	// Unmarshal the YAML string into a yamlRule struct
 	var data yamlRule
-	err := yaml.Unmarshal([]byte(yamlString), &data)
+	err := yaml.Unmarshal(unsafeConvert.ByteSlice(yamlString), &data)
 	if err != nil {
 		return false
 	}

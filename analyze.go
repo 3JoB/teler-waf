@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/3JoB/unsafeConvert"
 	"github.com/grafana/regexp"
 	"github.com/savsgio/atreugo/v11"
 	"go.uber.org/zap/zapcore"
@@ -13,7 +14,6 @@ import (
 
 	"github.com/3JoB/teler-waf/request"
 	"github.com/3JoB/teler-waf/threat"
-	"github.com/3JoB/unsafeConvert"
 )
 
 // Analyze runs the actual checks.
@@ -296,7 +296,7 @@ func (t *Teler) checkCVE(c *atreugo.RequestCtx) error {
 	// Iterate over the templates in the data set.
 	for _, cveTemplate := range cveData.GetArray("templates") {
 		// ID is the current CVE ID of the templates
-		cveID := string(cveTemplate.GetStringBytes("id"))
+		cveID := unsafeConvert.StringSlice(cveTemplate.GetStringBytes("id"))
 
 		// Iterate over the requests in the template.
 		for _, request := range cveTemplate.GetArray("requests") {

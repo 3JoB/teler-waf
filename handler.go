@@ -3,7 +3,6 @@ package teler
 import (
 	"github.com/3JoB/unsafeConvert"
 	"github.com/savsgio/atreugo/v11"
-
 	"github.com/valyala/fasttemplate"
 )
 

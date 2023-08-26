@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	realip "github.com/3JoB/atreugo-realip"
+	"github.com/3JoB/unsafeConvert"
 	"github.com/antonmedv/expr/vm"
 	"github.com/patrickmn/go-cache"
 	"github.com/savsgio/atreugo/v11"
@@ -16,7 +17,6 @@ import (
 
 	"github.com/3JoB/teler-waf/request"
 	"github.com/3JoB/teler-waf/threat"
-	"github.com/3JoB/unsafeConvert"
 )
 
 // inThreatIndex checks if the given substring is in specific threat datasets

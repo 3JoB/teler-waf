@@ -10,7 +10,7 @@
 
 **teler-waf** is a comprehensive security solution for Go-based web applications. It acts as an HTTP middleware, providing an easy-to-use interface for integrating IDS functionality with [teler IDS](https://github.com/3JoB/teler-waf) into existing Go applications. By using teler-waf, you can help protect against a variety of web-based attacks, such as cross-site scripting (XSS) and SQL injection.
 
-The package comes with a standard [`net/http.Handler`](https://pkg.go.dev/net/http#Handler), making it easy to integrate into your application's routing. When a client makes a request to a route protected by teler-waf, the request is first checked against the teler IDS to detect known malicious patterns. If no malicious patterns are detected, the request is then passed through for further processing.
+The package comes with a standard [`atreugo.View`](https://pkg.go.dev/github.com/savsgio/atreugo/v11@v11.10.1#View), making it easy to integrate into your application's routing. When a client makes a request to a route protected by teler-waf, the request is first checked against the teler IDS to detect known malicious patterns. If no malicious patterns are detected, the request is then passed through for further processing.
 
 In addition to providing protection against web-based attacks, teler-waf can also help improve the overall security and integrity of your application. It is highly configurable, allowing you to tailor it to fit the specific needs of your application.
 
@@ -43,7 +43,7 @@ Overall, teler-waf provides a comprehensive security solution for Go-based web a
 
 **Dependencies**:
 
-* **gcc** (GNU Compiler Collection) should be installed & configured to compile teler-waf.
+* ~~gcc (GNU Compiler Collection) should be installed & configured to compile teler-waf.~~ This branch removes the CGO dependency, which means that gcc is no longer needed, but at the cost of losing regular expression support for perl syntax.
 
 To install teler-waf in your Go application, run the following command to download and install the teler-waf package:
 
@@ -54,7 +54,7 @@ go get github.com/3JoB/teler-waf
 ## Usage
 
 > **Warning**
-> **Deprecation notice**: Threat exclusions (`Excludes`) will be deprecated in the upcoming release (**v2**). See [#73](https://github.com/3JoB/teler-waf/discussions/73) & [#64](https://github.com/3JoB/teler-waf/issues/64).
+> **Deprecation notice**: Threat exclusions (`Excludes`) will be deprecated in the upcoming release (**v2**). See [#73](https://github.com/kitabisa/teler-waf/discussions/73) & [#64](https://github.com/kitabisa/teler-waf/issues/64).
 
 Here is an example of how to use teler-waf in a Go application:
 
