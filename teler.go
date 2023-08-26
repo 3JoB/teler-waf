@@ -16,7 +16,6 @@ package teler
 import (
 	"archive/tar"
 	"bufio"
-	"bytes"
 	"errors"
 	"fmt"
 	"io"
@@ -35,6 +34,7 @@ import (
 	"github.com/klauspost/compress/zstd"
 	"github.com/patrickmn/go-cache"
 	"github.com/savsgio/atreugo/v11"
+	"github.com/valyala/fasthttp"
 	"github.com/valyala/fastjson"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -337,13 +337,13 @@ func (t *Teler) postAnalyze(c *atreugo.RequestCtx, k threat.Threat, err error) {
 	setCustomHeaders(c, msg, k)
 
 	// Send the logs
-	t.sendLogs(r, k, id, msg)
+	t.sendLogs(c, k, id, msg)
 
 	// Serve the reject handler
 	t.handler(c)
 }
 
-func (t *Teler) sendLogs(r *http.Request,c *atreugo.RequestCtx,  k threat.Threat, id string, msg string) {
+func (t *Teler) sendLogs(c *atreugo.RequestCtx, k threat.Threat, id string, msg string) {
 	// Declare request body, threat category, URL path, and remote IP address.
 	body := t.env.GetRequestValue("Body")
 	cat := k.String()
@@ -370,7 +370,7 @@ func (t *Teler) sendLogs(r *http.Request,c *atreugo.RequestCtx,  k threat.Threat
 	// Forward the detected threat to FalcoSidekick instance
 	headers := make(map[string]string)
 	c.Request.Header.VisitAll(func(k, v []byte) {
-		headers[unsafeConvert.StringSlice(k)] = unsafeConvert.StringSlice(v) 
+		headers[unsafeConvert.StringSlice(k)] = unsafeConvert.StringSlice(v)
 	})
 	jsonHeaders, err := json.Marshal(headers)
 	if err != nil {
@@ -405,18 +405,18 @@ func (t *Teler) sendLogs(r *http.Request,c *atreugo.RequestCtx,  k threat.Threat
 	}
 
 	// Send the POST request to FalcoSidekick instance
-	req, err := http.NewRequest("POST", t.opt.FalcoSidekickURL, bytes.NewBuffer(payload))
-	if err != nil {
-		t.error(zapcore.ErrorLevel, err.Error())
-	}
-	req.Header.Set("Content-Type", "application/json")
+	req := fasthttp.AcquireRequest()
+	defer fasthttp.ReleaseRequest(req)
+	req.Header.SetMethod(fasthttp.MethodPost)
+	req.Header.SetContentType("application/json")
+	req.SetBody(payload)
+	req.SetRequestURI(t.opt.FalcoSidekickURL)
 
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
+	res := fasthttp.AcquireResponse()
+	defer fasthttp.ReleaseResponse(res)
+
+	if err := fasthttp.Do(req, res); err != nil {
 		t.error(zapcore.ErrorLevel, err.Error())
-	} else {
-		defer resp.Body.Close()
 	}
 }
 
