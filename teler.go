@@ -42,6 +42,7 @@ import (
 	"github.com/valyala/fastjson"
 
 	"github.com/3JoB/teler-waf/dsl"
+	"github.com/3JoB/teler-waf/null"
 	"github.com/3JoB/teler-waf/request"
 	"github.com/3JoB/teler-waf/threat"
 )
@@ -129,7 +130,9 @@ func New(opts ...Options) *Teler {
 	// Initialize writer for logging and add standard error (stderr)
 	// as writer if NoStderr is false
 	ws := []io.Writer{}
-	if !o.NoStderr {
+	point := 0
+	if !o.NoStderr{
+		point++
 		ws = append(ws, zerolog.ConsoleWriter{Out: os.Stderr})
 	}
 
@@ -143,10 +146,16 @@ func New(opts ...Options) *Teler {
 			panic(fmt.Sprintf(errLogFile, err))
 		}
 
+		point++
 		ws = append(ws, t.out)
 	}
 
-	oks := zerolog.MultiLevelWriter(ws...)
+	var oks io.Writer
+	if point == 0 {
+		oks = null.New()
+	} else {
+		oks = zerolog.MultiLevelWriter(ws...)
+	}
 
 	t.log = zerolog.New(oks).With().Timestamp().Logger()
 
