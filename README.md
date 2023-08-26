@@ -43,7 +43,7 @@ Overall, teler-waf provides a comprehensive security solution for Go-based web a
 
 **Dependencies**:
 
-* ~~gcc (GNU Compiler Collection) should be installed & configured to compile teler-waf.~~ This branch removes the CGO dependency, which means that gcc is no longer needed, but at the cost of losing regular expression support for perl syntax.
+* ~~gcc (GNU Compiler Collection) should be installed & configured to compile teler-waf.~~ This branch removes the CGO dependency, which means that gcc is no longer needed. ~~, but at the cost of losing regular expression support for perl syntax.~~ Withdrawing the foreword, I used regexp2's RE2 mode instead of pcre and it worked.
 
 To install teler-waf in your Go application, run the following command to download and install the teler-waf package:
 
@@ -73,13 +73,7 @@ waf := teler.New()
 3. Use the `Handler` method of the `Teler` instance to create a `atreugo.View`. This handler can then be used in your application's HTTP routing to apply teler-waf's security measures to specific routes.
 
 ```go
-handler := waf.Handler(http.HandlerFunc(yourHandlerFunc))
-```
-
-4. Use the `handler` in your application's HTTP routing to apply teler-waf's security measures to specific routes.
-
-```go
-http.Handle("/path", handler)
+	server.GET("/" waf.Handler(yourHandlerFunc))
 ```
 
 That's it! You have configured teler-waf in your Go application.
@@ -104,17 +98,16 @@ import (
 	"github.com/3JoB/teler-waf/threat"
 )
 
-var myHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-	// This is the handler function for the route that we want to protect
-	// with teler-waf's security measures.
-	w.Write([]byte("hello world"))
-})
+func myHandler(c *atreugo.RequestCtx) error {
+	return c.TextResponse("text", 200)
+}
 
-var rejectHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+func rejectHandler(c *atreugo.RequestCtx) error {
 	// This is the handler function for the route that we want to be rejected
 	// if the teler-waf's security measures are triggered.
-	http.Error(w, "Sorry, your request has been denied for security reasons.", http.StatusForbidden)
-})
+	return c.ErrorResponse("Sorry, your request has been denied for security reasons.", 403)
+}
 
 func main() {
 	// Create a new instance of the Teler type using the New function

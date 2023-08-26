@@ -37,6 +37,11 @@ func rejectHandler(c *atreugo.RequestCtx) error {
 	return nil
 }
 
+// SetHandler sets the handler to call when the teler rejects a request.
+func (t *Teler) SetHandler(handler atreugo.View) {
+	t.handler = handler
+}
+
 // Handler implements the http.HandlerFunc for integration with the standard net/http library.
 func (t *Teler) Handler(next atreugo.View) atreugo.View {
 	return func(c *atreugo.RequestCtx) error {
