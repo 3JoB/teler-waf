@@ -18,6 +18,7 @@ require (
 	github.com/savsgio/atreugo/v11 v11.10.1
 	github.com/stretchr/testify v1.8.2
 	github.com/twharmon/gouid v0.5.2
+	github.com/valyala/fasthttp v1.48.0
 	github.com/valyala/fastjson v1.6.3
 	github.com/valyala/fasttemplate v1.2.2
 	gitlab.com/golang-commonmark/mdurl v0.0.0-20191124015652-932350d1cb84
@@ -66,7 +67,6 @@ require (
 	github.com/savsgio/gotils v0.0.0-20230208104028-c358bd845dee // indirect
 	github.com/ulikunitz/xz v0.5.10 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
-	github.com/valyala/fasthttp v1.48.0 // indirect
 	github.com/valyala/tcplisten v1.0.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
