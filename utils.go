@@ -12,8 +12,6 @@ import (
 	"github.com/savsgio/atreugo/v11"
 	"github.com/twharmon/gouid"
 	"gitlab.com/golang-commonmark/mdurl"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 
 	"github.com/3JoB/teler-waf/request"
 	"github.com/3JoB/teler-waf/threat"
@@ -199,14 +197,16 @@ func (t *Teler) isDSLProgramTrue(program *vm.Program) bool {
 }
 
 // setCache sets the error message to logs.
-func (t *Teler) error(level zapcore.Level, msg string) {
-	log := t.log.WithOptions(zap.WithCaller(true), zap.AddCallerSkip(1))
+//
+// 0 is Error, 1 is Panic
+func (t *Teler) error(level int, msg string) {
+	// log := t.log.WithOptions(zap.WithCaller(true), zap.AddCallerSkip(1))
 
 	switch level {
-	case zapcore.ErrorLevel:
-		log.Error(msg)
-	case zapcore.PanicLevel:
-		log.Panic(msg)
+	case 0:
+		t.log.Error().Msg(msg)
+	case 1:
+		t.log.Panic().Msg(msg)
 		// case zapcore.FatalLevel:
 		// 	log.Fatal(msg)
 	}

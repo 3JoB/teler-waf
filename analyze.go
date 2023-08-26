@@ -10,7 +10,6 @@ import (
 	"github.com/dlclark/regexp2"
 	"github.com/grafana/regexp"
 	"github.com/savsgio/atreugo/v11"
-	"go.uber.org/zap/zapcore"
 	"golang.org/x/net/publicsuffix"
 
 	"github.com/3JoB/teler-waf/request"
@@ -412,7 +411,7 @@ func (t *Teler) checkBadReferrer(c *atreugo.RequestCtx) error {
 
 	ref, err := url.Parse(unsafeConvert.StringSlice(c.Referer()))
 	if err != nil {
-		t.error(zapcore.ErrorLevel, err.Error())
+		t.error(0, err.Error())
 		return nil
 	}
 
@@ -424,7 +423,7 @@ func (t *Teler) checkBadReferrer(c *atreugo.RequestCtx) error {
 	// Extract the effective top-level domain plus one from the hostname of the referer URL
 	eTLD1, err := publicsuffix.EffectiveTLDPlusOne(ref.Hostname())
 	if err != nil {
-		t.error(zapcore.ErrorLevel, err.Error())
+		t.error(0, err.Error())
 		return nil
 	}
 
@@ -545,7 +544,7 @@ func (t *Teler) checkDirectoryBruteforce(c *atreugo.RequestCtx) error {
 	match, err := regexp.MatchString(pattern, t.threat.data[threat.DirectoryBruteforce])
 	if err != nil {
 		// Logs and return nil if there was an error during the regex matching process
-		t.error(zapcore.ErrorLevel, err.Error())
+		t.error(0, err.Error())
 		return nil
 	}
 

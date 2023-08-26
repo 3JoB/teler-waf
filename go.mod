@@ -15,6 +15,7 @@ require (
 	github.com/klauspost/compress v1.16.7
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/projectdiscovery/mapcidr v1.1.2
+	github.com/rs/zerolog v1.30.0
 	github.com/samber/lo v1.38.1
 	github.com/savsgio/atreugo/v11 v11.10.1
 	github.com/stretchr/testify v1.8.2
@@ -23,7 +24,6 @@ require (
 	github.com/valyala/fastjson v1.6.3
 	github.com/valyala/fasttemplate v1.2.2
 	gitlab.com/golang-commonmark/mdurl v0.0.0-20191124015652-932350d1cb84
-	go.uber.org/zap v1.25.0
 	golang.org/x/net v0.14.0
 	golang.org/x/text v0.12.0
 	gopkg.in/yaml.v3 v3.0.1
@@ -56,7 +56,10 @@ require (
 	github.com/hashicorp/go-safetemp v1.0.0 // indirect
 	github.com/hashicorp/go-version v1.6.0 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
+	github.com/kr/text v0.2.0 // indirect
 	github.com/leodido/go-urn v1.2.4 // indirect
+	github.com/mattn/go-colorable v0.1.13 // indirect
+	github.com/mattn/go-isatty v0.0.17 // indirect
 	github.com/microcosm-cc/bluemonday v1.0.25 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/mitchellh/go-testing-interface v1.14.1 // indirect
@@ -70,7 +73,6 @@ require (
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/tcplisten v1.0.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/crypto v0.12.0 // indirect
 	golang.org/x/exp v0.0.0-20230315142452-642cacee5cc0 // indirect
 	golang.org/x/oauth2 v0.8.0 // indirect

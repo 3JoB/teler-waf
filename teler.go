@@ -36,11 +36,10 @@ import (
 	"github.com/grafana/regexp"
 	"github.com/klauspost/compress/zstd"
 	"github.com/patrickmn/go-cache"
+	"github.com/rs/zerolog"
 	"github.com/savsgio/atreugo/v11"
 	"github.com/valyala/fasthttp"
 	"github.com/valyala/fastjson"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 
 	"github.com/3JoB/teler-waf/dsl"
 	"github.com/3JoB/teler-waf/request"
@@ -81,7 +80,7 @@ type Teler struct {
 	out *os.File
 
 	// log is a logger descriptor for the log.
-	log *zap.Logger
+	log zerolog.Logger
 
 	// threat is a Threat struct.
 	threat *Threat
@@ -129,9 +128,9 @@ func New(opts ...Options) *Teler {
 
 	// Initialize writer for logging and add standard error (stderr)
 	// as writer if NoStderr is false
-	ws := []zapcore.WriteSyncer{}
+	ws := []io.Writer{}
 	if !o.NoStderr {
-		ws = append(ws, os.Stderr)
+		ws = append(ws, zerolog.ConsoleWriter{Out: os.Stderr})
 	}
 
 	var err error
@@ -147,19 +146,9 @@ func New(opts ...Options) *Teler {
 		ws = append(ws, t.out)
 	}
 
-	// Create a new logger with the multiwriter as the output destination
-	mw := zapcore.NewMultiWriteSyncer(ws...)
-	t.log = zap.New(zapcore.NewCore(
-		zapcore.NewJSONEncoder(zap.NewProductionEncoderConfig()), // Use JSON encoding
-		mw,            // Use the multiwriter
-		zap.WarnLevel, // Set the logging level to debug
-	))
+	oks := zerolog.MultiLevelWriter(ws...)
 
-	// The defer statement is used to ensure that the Sync function is called before the function exits.
-	// This is used to flush any buffered writes to the output stream.
-	defer func() {
-		_ = t.log.Sync()
-	}()
+	t.log = zerolog.New(oks).With().Timestamp().Logger()
 
 	// Initialize the excludes field of the Threat struct to a new map and
 	// set the boolean flag for each threat category specified in the Excludes option to true
@@ -183,7 +172,7 @@ func New(opts ...Options) *Teler {
 	for _, wl := range o.Whitelists {
 		program, err := t.env.Compile(wl)
 		if err != nil {
-			t.error(zapcore.PanicLevel, fmt.Sprintf(errCompileDSLExpr, wl, err.Error()))
+			t.error(1, fmt.Sprintf(errCompileDSLExpr, wl, err.Error()))
 			continue
 		}
 		t.wlPrograms = append(t.wlPrograms, program)
@@ -193,7 +182,7 @@ func New(opts ...Options) *Teler {
 		// Find files matching the pattern specified in o.CustomsFromFile
 		rules, err := filepath.Glob(o.CustomsFromFile)
 		if err != nil {
-			t.error(zapcore.PanicLevel, fmt.Sprintf(errFindFile, o.CustomsFromFile, err.Error()))
+			t.error(1, fmt.Sprintf(errFindFile, o.CustomsFromFile, err.Error()))
 		}
 
 		// Iterate over the found files
@@ -201,13 +190,13 @@ func New(opts ...Options) *Teler {
 			// Open the file
 			file, err := os.Open(rule)
 			if err != nil {
-				t.error(zapcore.PanicLevel, fmt.Sprintf(errOpenFile, rule, err.Error()))
+				t.error(1, fmt.Sprintf(errOpenFile, rule, err.Error()))
 			}
 
 			// Convert the YAML file to a Rule
 			r, err := yamlToRule(file)
 			if err != nil {
-				t.error(zapcore.PanicLevel, fmt.Sprintf(errConvYAML, rule, err.Error()))
+				t.error(1, fmt.Sprintf(errConvYAML, rule, err.Error()))
 			}
 
 			// Append the converted Rule to the o.Customs slice
@@ -219,7 +208,7 @@ func New(opts ...Options) *Teler {
 	// Compile the regular expression pattern for each rule and add it to the patternRegex field of the Rule struct
 	for _, rule := range o.Customs {
 		if rule.Name == "" {
-			t.error(zapcore.PanicLevel, errInvalidRuleName)
+			t.error(1, errInvalidRuleName)
 		}
 
 		// Convert the condition to lowercase, if empty string then defaulting to "or"
@@ -230,7 +219,7 @@ func New(opts ...Options) *Teler {
 
 		// Check the condition is either "or" or "and"
 		if rule.Condition != "or" && rule.Condition != "and" {
-			t.error(zapcore.PanicLevel, fmt.Sprintf(errInvalidRuleCond, rule.Name, rule.Condition))
+			t.error(1, fmt.Sprintf(errInvalidRuleCond, rule.Name, rule.Condition))
 		}
 
 		// Iterate over the rules in the custom rules
@@ -239,7 +228,7 @@ func New(opts ...Options) *Teler {
 			if cond.DSL != "" {
 				program, err := t.env.Compile(cond.DSL)
 				if err != nil {
-					t.error(zapcore.PanicLevel, fmt.Sprintf(errCompileDSLExpr, cond.DSL, err.Error()))
+					t.error(1, fmt.Sprintf(errCompileDSLExpr, cond.DSL, err.Error()))
 					continue
 				}
 
@@ -250,7 +239,7 @@ func New(opts ...Options) *Teler {
 
 			// Check if the DSL expression or pattern is empty string
 			if cond.DSL == "" && cond.Pattern == "" {
-				t.error(zapcore.PanicLevel, fmt.Sprintf(errPattern, rule.Name, "DSL or pattern cannot be empty"))
+				t.error(1, fmt.Sprintf(errPattern, rule.Name, "DSL or pattern cannot be empty"))
 			}
 
 			// Check if the method rule condition is valid, and
@@ -266,13 +255,13 @@ func New(opts ...Options) *Teler {
 
 			// Empty pattern cannot be process
 			if cond.Pattern == "" {
-				t.error(zapcore.PanicLevel, fmt.Sprintf(errPattern, rule.Name, "pattern cannot be empty"))
+				t.error(1, fmt.Sprintf(errPattern, rule.Name, "pattern cannot be empty"))
 			}
 
 			// Compile the regular expression pattern
 			regex, err := regexp.Compile(cond.Pattern)
 			if err != nil {
-				t.error(zapcore.PanicLevel, fmt.Sprintf(errPattern, rule.Name, err.Error()))
+				t.error(1, fmt.Sprintf(errPattern, rule.Name, err.Error()))
 			}
 
 			rule.Rules[i].patternRegex = regex
@@ -296,7 +285,7 @@ func New(opts ...Options) *Teler {
 	if o.Response.HTMLFile != "" {
 		f, err := os.ReadFile(o.Response.HTMLFile)
 		if err != nil {
-			t.error(zapcore.PanicLevel, err.Error())
+			t.error(1, err.Error())
 		}
 
 		customHTMLResponse = unsafeConvert.StringSlice(f)
@@ -314,7 +303,7 @@ func New(opts ...Options) *Teler {
 
 	// Retrieve the data for each threat category
 	if err = t.getResources(); err != nil {
-		t.error(zapcore.PanicLevel, fmt.Sprintf(errResources, err))
+		t.error(1, fmt.Sprintf(errResources, err))
 	}
 
 	return t
@@ -353,16 +342,14 @@ func (t *Teler) sendLogs(c *atreugo.RequestCtx, k threat.Threat, id string, msg 
 	method := unsafeConvert.StringSlice(c.Method())
 
 	// Log the detected threat, request details and the error message.
-	t.log.With(
-		zap.String("id", id),
-		zap.String("category", cat),
-		zap.Namespace("request"),
-		zap.String("method", method),
-		zap.String("path", path),
-		zap.String("ip_addr", ipAddr),
-		zap.Any("headers", unsafeConvert.StringSlice(c.Request.Header.Header())),
-		zap.String("body", body),
-	).Warn(msg)
+	t.log.Warn().
+		Str("id", id).
+		Str("category", cat).Dict("request", zerolog.Dict().
+		Str("method", method).
+		Str("path", path).
+		Str("ip_addr", ipAddr).
+		Str("headers", unsafeConvert.StringSlice(c.Request.Header.Header())).
+		Str("body", body)).Msg(msg)
 
 	if t.opt.FalcoSidekickURL == "" {
 		return
@@ -375,7 +362,7 @@ func (t *Teler) sendLogs(c *atreugo.RequestCtx, k threat.Threat, id string, msg 
 	})
 	jsonHeaders, err := json.Marshal(headers)
 	if err != nil {
-		t.error(zapcore.PanicLevel, err.Error())
+		t.error(1, err.Error())
 	}
 
 	// Initialize time
@@ -402,7 +389,7 @@ func (t *Teler) sendLogs(c *atreugo.RequestCtx, k threat.Threat, id string, msg 
 	}
 	payload, err := json.Marshal(data)
 	if err != nil {
-		t.error(zapcore.ErrorLevel, err.Error())
+		t.error(0, err.Error())
 	}
 
 	// Send the POST request to FalcoSidekick instance
@@ -417,7 +404,7 @@ func (t *Teler) sendLogs(c *atreugo.RequestCtx, k threat.Threat, id string, msg 
 	defer fasthttp.ReleaseResponse(res)
 
 	if err := fasthttp.Do(req, res); err != nil {
-		t.error(zapcore.ErrorLevel, err.Error())
+		t.error(0, err.Error())
 	}
 }
 
