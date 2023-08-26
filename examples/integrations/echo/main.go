@@ -3,7 +3,7 @@ package main
 import (
 	"net/http"
 
-	"github.com/kitabisa/teler-waf"
+	"github.com/3JoB/teler-waf"
 	"github.com/labstack/echo"
 )
 

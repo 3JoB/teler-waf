@@ -1,16 +1,16 @@
 package teler
 
 import (
-	"os"
-	"testing"
-
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
+	"testing"
 
-	"github.com/kitabisa/teler-waf/request"
-	"github.com/kitabisa/teler-waf/threat"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/3JoB/teler-waf/request"
+	"github.com/3JoB/teler-waf/threat"
 )
 
 // Prepraring handler for all cases

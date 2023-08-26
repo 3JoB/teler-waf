@@ -4,8 +4,9 @@ import (
 	"os"
 	"testing"
 
-	"github.com/kitabisa/teler-waf"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/3JoB/teler-waf"
 )
 
 var (

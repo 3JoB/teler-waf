@@ -3,8 +3,9 @@ package dsl
 import (
 	"github.com/antonmedv/expr"
 	"github.com/antonmedv/expr/vm"
-	"github.com/kitabisa/teler-waf/threat"
 	"github.com/samber/lo"
+
+	"github.com/3JoB/teler-waf/threat"
 )
 
 // Run executes the provided expr.Program in the DSL environment.

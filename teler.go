@@ -14,34 +14,33 @@ instance can then be used to wrap an existing HTTP handler.
 package teler
 
 import (
+	"archive/tar"
 	"bufio"
 	"bytes"
 	"errors"
 	"fmt"
 	"io"
+	"net/http"
+	"net/url"
 	"os"
 	"path"
-	"regexp"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"time"
 
-	"archive/tar"
-	"encoding/json"
-	"net/http"
-	"net/url"
-	"path/filepath"
-
 	"github.com/antonmedv/expr/vm"
-	"github.com/kitabisa/teler-waf/dsl"
-	"github.com/kitabisa/teler-waf/request"
-	"github.com/kitabisa/teler-waf/threat"
+	"github.com/goccy/go-json"
+	"github.com/grafana/regexp"
 	"github.com/klauspost/compress/zstd"
 	"github.com/patrickmn/go-cache"
-	"github.com/scorpionknifes/go-pcre"
 	"github.com/valyala/fastjson"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+
+	"github.com/3JoB/teler-waf/dsl"
+	"github.com/3JoB/teler-waf/request"
+	"github.com/3JoB/teler-waf/threat"
 )
 
 // Threat defines what threat category should be excluded
@@ -60,7 +59,7 @@ type Threat struct {
 
 	// badCrawler contains the compiled slices of pointers to regexp.Regexp
 	// and pcre.Matcher objects of BadCrawler threat data as interface.
-	badCrawler []interface{}
+	badCrawler []any
 
 	// cve contains the compiled JSON CVEs data of pointers to fastjson.Value
 	cve *fastjson.Value
@@ -375,14 +374,14 @@ func (t *Teler) sendLogs(r *http.Request, k threat.Threat, id string, msg string
 	now := time.Now()
 
 	// Build FalcoSidekick event payload
-	data := map[string]interface{}{
+	data := map[string]any{
 		"output": fmt.Sprintf(
 			"%s: %s at %s by %s (caller=%s threat=%s id=%s)",
 			now.Format("15:04:05.000000000"), msg, r.URL.Path, ipAddr, t.caller, cat, id),
 		"priority": "Warning",
 		"rule":     msg,
 		"time":     now.Format("2006-01-02T15:04:05.999999999Z"),
-		"output_fields": map[string]interface{}{
+		"output_fields": map[string]any{
 			"teler.caller":    t.caller,
 			"teler.id":        id,
 			"teler.threat":    cat,
@@ -537,7 +536,6 @@ func (t *Teler) getResources() error {
 		if err != nil {
 			return err
 		}
-
 	}
 
 	return nil
@@ -564,14 +562,7 @@ func (t *Teler) processResource(k threat.Threat) error {
 			// Compile the filter rule as a regular expression
 			t.threat.cwa.Filters[i].pattern, err = regexp.Compile(filter.Rule) // nosemgrep: trailofbits.go.questionable-assignment.questionable-assignment
 			if err != nil {
-				// If the regular expression cannot be compiled,
-				// try to compile it as a PCRE pattern
-				cpcre, err := pcre.Compile(filter.Rule, pcre.MULTILINE)
-				if err == nil {
-					// If the PCRE pattern is successfully compiled,
-					// create a new Matcher and assign it to the pattern field
-					t.threat.cwa.Filters[i].pattern = cpcre.NewMatcher()
-				}
+				return err
 			}
 		}
 	case threat.CVE:
@@ -642,19 +633,12 @@ func (t *Teler) processResource(k threat.Threat) error {
 		// Split the data into a slice of strings, compile each string
 		// into a regex or pcre expr, and save it in the badCrawler field.
 		patterns := strings.Split(t.threat.data[k], "\n")
-		t.threat.badCrawler = make([]interface{}, len(patterns))
+		t.threat.badCrawler = make([]any, len(patterns))
 
 		for i, pattern := range patterns {
 			t.threat.badCrawler[i], err = regexp.Compile(pattern)
 			if err != nil {
-				// If the regular expression cannot be compiled,
-				// try to compile it as a PCRE pattern
-				cpcre, err := pcre.Compile(pattern, pcre.MULTILINE)
-				if err == nil {
-					// If the PCRE pattern is successfully compiled,
-					// create a new Matcher and assign it to the pattern field
-					t.threat.badCrawler[i] = cpcre.NewMatcher()
-				}
+				return err
 			}
 		}
 	}

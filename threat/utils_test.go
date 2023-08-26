@@ -1,9 +1,8 @@
 package threat
 
 import (
-	"testing"
-
 	"path/filepath"
+	"testing"
 
 	"github.com/stretchr/testify/assert"
 )

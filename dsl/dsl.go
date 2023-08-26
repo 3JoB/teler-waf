@@ -18,10 +18,11 @@ import (
 
 	"github.com/antonmedv/expr"
 	"github.com/daniel-hutao/spinlock"
-	"github.com/kitabisa/teler-waf/threat"
 	"github.com/projectdiscovery/mapcidr"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
+
+	"github.com/3JoB/teler-waf/threat"
 )
 
 // Env represents the environment for the DSL.

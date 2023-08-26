@@ -3,8 +3,8 @@ package main
 import (
 	"net/http"
 
+	"github.com/3JoB/teler-waf"
 	"github.com/arl/statsviz"
-	"github.com/kitabisa/teler-waf"
 )
 
 func helloHandler(w http.ResponseWriter, r *http.Request) {

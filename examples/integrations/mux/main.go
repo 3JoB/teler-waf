@@ -3,11 +3,10 @@ package main
 import (
 	"fmt"
 	"log"
-
 	"net/http"
 
+	"github.com/3JoB/teler-waf"
 	"github.com/gorilla/mux"
-	"github.com/kitabisa/teler-waf"
 )
 
 func main() {

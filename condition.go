@@ -1,10 +1,10 @@
 package teler
 
 import (
-	"regexp"
-
 	"github.com/antonmedv/expr/vm"
-	"github.com/kitabisa/teler-waf/request"
+	"github.com/grafana/regexp"
+
+	"github.com/3JoB/teler-waf/request"
 )
 
 // Condition specifies a request element to match and

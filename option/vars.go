@@ -1,5 +1,5 @@
 package option
 
-import "github.com/kitabisa/teler-waf"
+import "github.com/3JoB/teler-waf"
 
 var opt teler.Options

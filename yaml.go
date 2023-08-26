@@ -6,8 +6,9 @@ import (
 	"os"
 
 	"github.com/go-playground/validator/v10"
-	"github.com/kitabisa/teler-waf/request"
 	"gopkg.in/yaml.v3"
+
+	"github.com/3JoB/teler-waf/request"
 )
 
 type yamlCondition struct {

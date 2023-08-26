@@ -3,17 +3,16 @@ package teler
 import (
 	"errors"
 	"fmt"
-	"regexp"
-	"strings"
-
 	"net/http"
 	"net/url"
+	"strings"
 
-	"github.com/kitabisa/teler-waf/request"
-	"github.com/kitabisa/teler-waf/threat"
-	"github.com/scorpionknifes/go-pcre"
+	"github.com/grafana/regexp"
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/net/publicsuffix"
+
+	"github.com/3JoB/teler-waf/request"
+	"github.com/3JoB/teler-waf/threat"
 )
 
 // Analyze runs the actual checks.
@@ -238,8 +237,6 @@ func (t *Teler) checkCommonWebAttack(r *http.Request) error {
 		switch pattern := filter.pattern.(type) {
 		case *regexp.Regexp: // If the pattern is a regex
 			match = pattern.MatchString(uri) || pattern.MatchString(body)
-		case *pcre.Matcher: // If the pattern is a PCRE expr
-			match = pattern.MatchString(uri, 0) || pattern.MatchString(body, 0)
 		default: // If the pattern is of an unknown type, skip to the next iteration
 			continue
 		}
@@ -484,8 +481,6 @@ func (t *Teler) checkBadCrawler(r *http.Request) error {
 		switch p := pattern.(type) {
 		case *regexp.Regexp: // If the pattern is a regex
 			match = p.MatchString(ua)
-		case *pcre.Matcher: // If the pattern is a PCRE expr
-			match = p.MatchString(ua, 0)
 		default: // If the pattern is of an unknown type, skip to the next iteration
 			continue
 		}

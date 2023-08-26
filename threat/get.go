@@ -3,9 +3,8 @@ package threat
 import (
 	"fmt"
 	"os"
-	"time"
-
 	"path/filepath"
+	"time"
 
 	"github.com/hashicorp/go-getter"
 )

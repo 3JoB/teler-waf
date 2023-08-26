@@ -1,6 +1,6 @@
 package teler
 
-import "github.com/kitabisa/teler-waf/threat"
+import "github.com/3JoB/teler-waf/threat"
 
 // Options is a struct for specifying configuration options for the teler.Teler middleware.
 type Options struct {

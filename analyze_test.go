@@ -1,9 +1,8 @@
 package teler
 
 import (
-	"testing"
-
 	"net/http/httptest"
+	"testing"
 )
 
 func TestAnalyze(t *testing.T) {

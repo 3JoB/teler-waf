@@ -2,7 +2,6 @@ package threat
 
 import (
 	"fmt"
-
 	"path/filepath"
 )
 

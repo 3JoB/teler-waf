@@ -3,8 +3,8 @@ package main
 import (
 	"net/http"
 
+	"github.com/3JoB/teler-waf"
 	"github.com/go-chi/chi"
-	"github.com/kitabisa/teler-waf"
 )
 
 func main() {

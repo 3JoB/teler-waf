@@ -7,6 +7,6 @@ type cwa struct {
 		Impact      int64    `json:"impact"`
 		Rule        string   `json:"rule"`
 		Tags        []string `json:"tags"`
-		pattern     interface{}
+		pattern     any
 	} `json:"filters"`
 }

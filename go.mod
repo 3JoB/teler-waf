@@ -1,18 +1,19 @@
-module github.com/kitabisa/teler-waf
+module github.com/3JoB/teler-waf
 
-go 1.19
+go 1.21.0
 
 require (
 	github.com/antonmedv/expr v1.12.7
 	github.com/daniel-hutao/spinlock v0.1.0
 	github.com/dwisiswant0/clientip v0.3.0
 	github.com/go-playground/validator/v10 v10.14.0
+	github.com/goccy/go-json v0.10.2
+	github.com/grafana/regexp v0.0.0-20221122212121-6b5c0a4cb7fd
 	github.com/hashicorp/go-getter v1.7.2
 	github.com/klauspost/compress v1.16.7
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/projectdiscovery/mapcidr v1.1.2
 	github.com/samber/lo v1.38.1
-	github.com/scorpionknifes/go-pcre v0.0.0-20210805092536-77486363b797
 	github.com/stretchr/testify v1.8.2
 	github.com/twharmon/gouid v0.5.2
 	github.com/valyala/fastjson v1.6.3

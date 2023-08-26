@@ -6,19 +6,19 @@ import (
 	"fmt"
 	"html"
 	"io"
-	"strings"
-
 	"net/http"
+	"strings"
 
 	"github.com/antonmedv/expr/vm"
 	"github.com/dwisiswant0/clientip"
-	"github.com/kitabisa/teler-waf/request"
-	"github.com/kitabisa/teler-waf/threat"
 	"github.com/patrickmn/go-cache"
 	"github.com/twharmon/gouid"
 	"gitlab.com/golang-commonmark/mdurl"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+
+	"github.com/3JoB/teler-waf/request"
+	"github.com/3JoB/teler-waf/threat"
 )
 
 // inThreatIndex checks if the given substring is in specific threat datasets
@@ -65,7 +65,7 @@ func (t *Teler) setDSLRequestEnv(r *http.Request) {
 	}
 
 	// Set DSL requests environment
-	t.env.Requests = map[string]interface{}{
+	t.env.Requests = map[string]any{
 		"URI":     uri,
 		"Headers": headers,
 		"Body":    body,
@@ -173,11 +173,11 @@ func setReqIdHeader(w http.ResponseWriter) string {
 // removeSpecialChars to remove special characters with empty string
 // includes line feed/newline, horizontal tab, backspace & form feed
 func removeSpecialChars(str string) string {
-	str = strings.Replace(str, "\n", "", -1) // Replace all newline
-	str = strings.Replace(str, "\r", "", -1) // Replace all carriage return
-	str = strings.Replace(str, "\t", "", -1) // Replace all horizontal tab
-	str = strings.Replace(str, "\b", "", -1) // Replace all backspace
-	str = strings.Replace(str, "\f", "", -1) // Replace all form feed
+	str = strings.ReplaceAll(str, "\n", "") // Replace all newline
+	str = strings.ReplaceAll(str, "\r", "") // Replace all carriage return
+	str = strings.ReplaceAll(str, "\t", "") // Replace all horizontal tab
+	str = strings.ReplaceAll(str, "\b", "") // Replace all backspace
+	str = strings.ReplaceAll(str, "\f", "") // Replace all form feed
 
 	return str
 }

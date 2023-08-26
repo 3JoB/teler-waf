@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"os"
 
-	"encoding/json"
-
-	"github.com/kitabisa/teler-waf"
+	"github.com/goccy/go-json"
 	"gopkg.in/yaml.v3"
+
+	"github.com/3JoB/teler-waf"
 )
 
 func readFile(path string) ([]byte, error) {

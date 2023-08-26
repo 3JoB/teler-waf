@@ -1,8 +1,8 @@
 package main
 
 import (
+	"github.com/3JoB/teler-waf"
 	"github.com/gin-gonic/gin"
-	"github.com/kitabisa/teler-waf"
 )
 
 func main() {
