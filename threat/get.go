@@ -21,21 +21,19 @@ func Get() error {
 	}
 
 	// Delete existing threat datasets
-	if err = os.RemoveAll(dst); err != nil {
+	if err := os.RemoveAll(dst); err != nil {
 		// If there was an error deleting the datasets, return the error
 		return err
 	}
 
 	// Create the destination directory if it doesn't exist
-	err = os.MkdirAll(dst, 0755)
-	if err != nil {
+	if err := os.MkdirAll(dst, 0755); err != nil {
 		// If there was an error creating the directory, return the error
 		return err
 	}
 
 	// Retrieve the compressed archive DB file from the GitHub repository using go-getter
-	err = getter.Get(dst, fmt.Sprintf("%s?%s", DbURL, dbQuery))
-	if err != nil {
+	if err := getter.Get(dst, fmt.Sprintf("%s?%s", DbURL, dbQuery)); err != nil {
 		// If there was an error retrieving the files, return the error
 		return err
 	}

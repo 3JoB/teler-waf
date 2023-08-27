@@ -4,6 +4,8 @@ import "github.com/3JoB/teler-waf/threat"
 
 // Options is a struct for specifying configuration options for the teler.Teler middleware.
 type Options struct {
+	MaxMind MaxMind `json:"maxmind" yaml:"maxmind"`
+
 	// Excludes is a list of threat types to exclude from the security checks.
 	// These threat types are defined in the threat.Threat type.
 	//
@@ -87,4 +89,10 @@ type Options struct {
 	// This field should be set to the URL of your FalcoSidekick instance, including the
 	// protocol & port (e.g. "http://localhost:2801").
 	FalcoSidekickURL string `json:"falcosidekick_url" yaml:"falcosidekick_url"`
+}
+
+type MaxMind struct {
+	Install      bool   `json:"install" yaml:"install"`             // When enabled, it will automatically search the maxmind version information and database in the system.
+	AutuDownload bool   `json:"auto_download" yaml:"auto_download"` // Auto Download mmdb
+	License      string `json:"license" yaml:"license"`             // License key, only required when AutoDownload is enabled.
 }

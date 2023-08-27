@@ -29,6 +29,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/3JoB/maxminddb-golang"
 	"github.com/3JoB/unsafeConvert"
 	"github.com/antonmedv/expr/vm"
 	"github.com/dlclark/regexp2"
@@ -42,6 +43,7 @@ import (
 	"github.com/valyala/fastjson"
 
 	"github.com/3JoB/teler-waf/dsl"
+	"github.com/3JoB/teler-waf/maxm"
 	"github.com/3JoB/teler-waf/null"
 	"github.com/3JoB/teler-waf/request"
 	"github.com/3JoB/teler-waf/threat"
@@ -70,6 +72,15 @@ type Threat struct {
 
 	// cwa is a struct of CommonWebAttack threat data
 	cwa *cwa
+
+	// mmdb
+	MaxM *maxDB
+}
+
+type maxDB struct {
+	ASN     *maxminddb.Reader
+	City    *maxminddb.Reader
+	Country *maxminddb.Reader
 }
 
 // Teler is a middleware that helps setup a few basic security features
@@ -131,7 +142,7 @@ func New(opts ...Options) *Teler {
 	// as writer if NoStderr is false
 	ws := []io.Writer{}
 	point := 0
-	if !o.NoStderr{
+	if !o.NoStderr {
 		point++
 		ws = append(ws, zerolog.ConsoleWriter{Out: os.Stderr})
 	}
@@ -402,15 +413,13 @@ func (t *Teler) sendLogs(c *atreugo.RequestCtx, k threat.Threat, id string, msg 
 	}
 
 	// Send the POST request to FalcoSidekick instance
-	req := fasthttp.AcquireRequest()
+	req, res := fasthttp.AcquireRequest(), fasthttp.AcquireResponse()
 	defer fasthttp.ReleaseRequest(req)
+	defer fasthttp.ReleaseResponse(res)
 	req.Header.SetMethod(fasthttp.MethodPost)
 	req.Header.SetContentType("application/json")
 	req.SetBody(payload)
 	req.SetRequestURI(t.opt.FalcoSidekickURL)
-
-	res := fasthttp.AcquireResponse()
-	defer fasthttp.ReleaseResponse(res)
 
 	if err := fasthttp.Do(req, res); err != nil {
 		t.error(0, err.Error())
@@ -421,6 +430,42 @@ func (t *Teler) sendLogs(c *atreugo.RequestCtx, k threat.Threat, id string, msg 
 func (t *Teler) getResources() error {
 	// Initialize updated
 	var updated bool
+
+	if (t.opt.MaxMind != MaxMind{}) {
+		if t.opt.MaxMind.Install {
+			xs := &maxm.Maxm{}
+			if t.opt.MaxMind.AutuDownload {
+				maxm.Init(t.opt.MaxMind.License)
+				upd, err := xs.IsUpdated()
+				if err != nil {
+					return err
+				}
+				if upd {
+					if err := xs.Get(); err != nil {
+						return err
+					}
+				}
+			}
+			asn, city, country := xs.GetName()
+			asn_r, err := maxminddb.Open(asn)
+			if err != nil {
+				return err
+			}
+			city_r, err := maxminddb.Open(city)
+			if err != nil {
+				return err
+			}
+			country_r, err := maxminddb.Open(country)
+			if err != nil {
+				return err
+			}
+			t.threat.MaxM = &maxDB{
+				ASN:     asn_r,
+				City:    city_r,
+				Country: country_r,
+			}
+		}
+	}
 
 	// Check if threat datasets is updated
 	updated, err := threat.IsUpdated() // nosemgrep: trailofbits.go.invalid-usage-of-modified-variable.invalid-usage-of-modified-variable
@@ -455,11 +500,6 @@ func (t *Teler) getResources() error {
 		if err := fasthttp.Do(req, res); err != nil {
 			return err
 		}
-		resp, err := http.Get(threat.DbURL)
-		if err != nil {
-			return err
-		}
-		defer resp.Body.Close()
 
 		var buf *bytes.Buffer
 		buf.Write(res.Body())

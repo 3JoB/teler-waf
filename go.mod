@@ -4,6 +4,8 @@ go 1.21.0
 
 require (
 	github.com/3JoB/atreugo-realip v0.0.1
+	github.com/3JoB/maxminddb-golang v0.0.1
+	github.com/3JoB/ulib v1.31.0
 	github.com/3JoB/unsafeConvert v1.5.0
 	github.com/3JoB/validator v0.0.1
 	github.com/antonmedv/expr v1.14.3
@@ -18,7 +20,7 @@ require (
 	github.com/rs/zerolog v1.30.0
 	github.com/samber/lo v1.38.1
 	github.com/savsgio/atreugo/v11 v11.10.1
-	github.com/stretchr/testify v1.8.2
+	github.com/stretchr/testify v1.8.4
 	github.com/twharmon/gouid v0.5.2
 	github.com/valyala/fasthttp v1.48.0
 	github.com/valyala/fastjson v1.6.3
@@ -35,6 +37,7 @@ require (
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
 	cloud.google.com/go/iam v0.13.0 // indirect
 	cloud.google.com/go/storage v1.28.1 // indirect
+	github.com/3JoB/go-reflect v1.0.2 // indirect
 	github.com/andybalholm/brotli v1.0.5 // indirect
 	github.com/aws/aws-sdk-go v1.44.296 // indirect
 	github.com/aymerick/douceur v0.2.0 // indirect
@@ -68,14 +71,16 @@ require (
 	github.com/projectdiscovery/blackrock v0.0.1 // indirect
 	github.com/projectdiscovery/utils v0.0.32 // indirect
 	github.com/saintfish/chardet v0.0.0-20230101081208-5e3ef4b5456d // indirect
+	github.com/saracen/walker v0.1.3 // indirect
 	github.com/savsgio/gotils v0.0.0-20230208104028-c358bd845dee // indirect
-	github.com/ulikunitz/xz v0.5.10 // indirect
+	github.com/ulikunitz/xz v0.5.11 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/tcplisten v1.0.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	golang.org/x/crypto v0.12.0 // indirect
-	golang.org/x/exp v0.0.0-20230315142452-642cacee5cc0 // indirect
+	golang.org/x/exp v0.0.0-20230713183714-613f0c0eb8a1 // indirect
 	golang.org/x/oauth2 v0.8.0 // indirect
+	golang.org/x/sync v0.2.0 // indirect
 	golang.org/x/sys v0.11.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 	google.golang.org/api v0.114.0 // indirect
