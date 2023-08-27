@@ -127,20 +127,19 @@ func (t *Teler) checkCustomRules(c *atreugo.RequestCtx) error {
 
 	if (t.opt.MaxMind != MaxMind{}) {
 		if t.opt.MaxMind.Install {
+			nip := net.ParseIP(clientIP)
+
+			var asn ASN
+			var city City
+
+			t.threat.MaxM.City.Lookup(nip, &city)
+			t.threat.MaxM.ASN.Lookup(nip, &asn)
+
+			// They are temporary Debug methods and will be removed soon.
+			t.log.Info().Any("ASN", asn).Msg("asn msg")
+			t.log.Info().Any("City", city).Msg("city msg")
 		}
-
 	}
-
-	nip := net.ParseIP(clientIP)
-
-	var asn ASN
-	var city City
-
-	t.threat.MaxM.City.Lookup(nip, &city)
-	t.threat.MaxM.ASN.Lookup(nip, &asn)
-
-	t.log.Info().Any("ASN", asn)
-	t.log.Info().Any("City", city)
 
 	// Check if the request is in cache
 	key := headers + uri + body
