@@ -78,9 +78,8 @@ type Threat struct {
 }
 
 type maxDB struct {
-	ASN     *maxminddb.Reader
-	City    *maxminddb.Reader
-	Country *maxminddb.Reader
+	ASN  *maxminddb.Reader
+	City *maxminddb.Reader
 }
 
 // Teler is a middleware that helps setup a few basic security features
@@ -436,17 +435,19 @@ func (t *Teler) getResources() error {
 			xs := &maxm.Maxm{}
 			if t.opt.MaxMind.AutuDownload {
 				maxm.Init(t.opt.MaxMind.License)
+				t.log.Info().Msg("Checking for GeoLite2 updates...")
 				upd, err := xs.IsUpdated()
 				if err != nil {
 					return err
 				}
 				if upd {
+					t.log.Info().Msg("Downloading GeoLite2 database...")
 					if err := xs.Get(); err != nil {
 						return err
 					}
 				}
 			}
-			asn, city, country := xs.GetName()
+			asn, city := xs.GetName()
 			asn_r, err := maxminddb.Open(asn)
 			if err != nil {
 				return err
@@ -455,14 +456,9 @@ func (t *Teler) getResources() error {
 			if err != nil {
 				return err
 			}
-			country_r, err := maxminddb.Open(country)
-			if err != nil {
-				return err
-			}
 			t.threat.MaxM = &maxDB{
-				ASN:     asn_r,
-				City:    city_r,
-				Country: country_r,
+				ASN:  asn_r,
+				City: city_r,
 			}
 		}
 	}

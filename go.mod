@@ -42,6 +42,7 @@ require (
 	github.com/aws/aws-sdk-go v1.44.296 // indirect
 	github.com/aymerick/douceur v0.2.0 // indirect
 	github.com/bgentry/go-netrc v0.0.0-20140422174119-9fd32a8b3d3d // indirect
+	github.com/cubicdaiya/bms v0.0.0-20220406120216-977ebe24a206 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/fasthttp/router v1.4.20 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.2 // indirect

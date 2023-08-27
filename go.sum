@@ -235,6 +235,8 @@ github.com/cncf/xds/go v0.0.0-20211001041855-01bcc9b48dfe/go.mod h1:eXthEFrGJvWH
 github.com/cncf/xds/go v0.0.0-20211011173535-cb28da3451f1/go.mod h1:eXthEFrGJvWHgFFCl3hGmgk+/aYT6PnTQLykKQRLhEs=
 github.com/coreos/go-systemd/v22 v22.5.0/go.mod h1:Y58oyj3AT4RCenI/lSvhwexgC+NSVTIJ3seZv2GcEnc=
 github.com/creack/pty v1.1.9/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ33E=
+github.com/cubicdaiya/bms v0.0.0-20220406120216-977ebe24a206 h1:xCM/A0kr8HgAUDRVIxmSjiArWToQrlJ6MQ0VLgUNUpg=
+github.com/cubicdaiya/bms v0.0.0-20220406120216-977ebe24a206/go.mod h1:1PkVluDmW+Z1O29Fe5zPkX+D7bu4oe/kNh1SbAYvhdE=
 github.com/daniel-hutao/spinlock v0.1.0 h1:qk6v2L6mJLUmxzq1eJ5xUIlCh4q0wM+26Qy/KfH5c3U=
 github.com/daniel-hutao/spinlock v0.1.0/go.mod h1:KkIAx91Qk/GDks3LcKXTwOJ7CS03ApkAHU4X4nrlwto=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=

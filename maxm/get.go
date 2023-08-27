@@ -2,14 +2,14 @@ package maxm
 
 import (
 	"archive/tar"
-	"bytes"
+	"compress/gzip"
 	"io"
 	"os"
 	"path/filepath"
 
 	"github.com/3JoB/ulib/fsutil"
+	"github.com/3JoB/ulib/keyword/bms"
 	"github.com/3JoB/unsafeConvert"
-	"github.com/klauspost/compress/gzip"
 	"github.com/valyala/fasthttp"
 )
 
@@ -21,10 +21,12 @@ type Maxm struct {
 //
 // It returns an error if there was an issue when retrieving the datasets.
 func (x *Maxm) Get() error {
-	// Delete existing threat datasets
-	if err := os.RemoveAll(x.loc); err != nil {
-		// If there was an error deleting the datasets, return the error
-		return err
+	if fsutil.IsExist(x.loc) {
+		// Delete existing threat datasets
+		if err := os.RemoveAll(x.loc); err != nil {
+			// If there was an error deleting the datasets, return the error
+			return err
+		}
 	}
 
 	// Create the destination directory if it doesn't exist
@@ -33,22 +35,19 @@ func (x *Maxm) Get() error {
 		return err
 	}
 
-	if err := x.get(ASNURL, asn_key, true); err != nil {
+	if err := x.get(ASNURL, asn_key, asn_gz, true); err != nil {
 		return err
 	}
-	if err := x.get(CityURL, city_key, false); err != nil {
-		return err
-	}
-	if err := x.get(CountryURL, country_key, false); err != nil {
+	if err := x.get(CityURL, city_key, city_gz, false); err != nil {
 		return err
 	}
 	// Return a nil error
 	return nil
 }
 
-// Return ASN, City, Country
-func (x *Maxm) GetName() (string, string, string) {
-	return filepath.Join(x.loc, "/"+asn_key), filepath.Join(x.loc, "/"+city_key), filepath.Join(x.loc, "/"+country_key)
+// Return ASN, City
+func (x *Maxm) GetName() (string, string) {
+	return filepath.Join(x.loc, "/"+asn_key), filepath.Join(x.loc, "/"+city_key)
 }
 
 // location returns the location of the teler cache directory.
@@ -70,6 +69,7 @@ func (x *Maxm) location() error {
 // It returns a boolean value indicating whether the datasets are updated or not,
 // and an error if there was an issue when checking the datasets' last modified date.
 func (x *Maxm) IsUpdated() (bool, error) {
+	var err error
 	// Get the location of the threat datasets
 	if err := x.location(); err != nil {
 		// If there was an error getting the location, return out and the error
@@ -91,7 +91,17 @@ func (x *Maxm) IsUpdated() (bool, error) {
 		return false, ErrNoModified
 	}
 
-	r, err := fsutil.OpenRead(filepath.Join(x.loc, "/modified"))
+	if !fsutil.IsExist(x.loc) {
+		fsutil.Mkdir(x.loc)
+	}
+
+	mod_path := filepath.Join(x.loc, "/.modified")
+	f, err := fsutil.OpenFile(mod_path, os.O_RDWR|os.O_CREATE, 0666)
+	if err != nil {
+		return false, err
+	}
+	defer f.Close()
+	r, err := fsutil.ReadAll(f)
 	if err != nil {
 		return false, err
 	}
@@ -100,10 +110,10 @@ func (x *Maxm) IsUpdated() (bool, error) {
 	// Check if the last modified date is equal to the current date
 
 	// Return the result and a nil error
-	return version == last_modified, nil
+	return version != last_modified, nil
 }
 
-func (x *Maxm) get(url, key string, update bool) error {
+func (x *Maxm) get(url, key, zk string, update bool) error {
 	req, res := fasthttp.AcquireRequest(), fasthttp.AcquireResponse()
 	req.Header.SetMethod(fasthttp.MethodGet)
 	req.Header.SetUserAgent(user_agent)
@@ -114,24 +124,33 @@ func (x *Maxm) get(url, key string, update bool) error {
 	fasthttp.ReleaseRequest(req)
 	if update {
 		last_modified := unsafeConvert.StringSlice(res.Header.Peek("Last-Modified"))
-		fsutil.TruncWrite(filepath.Join(x.loc, "/modified"), last_modified)
+		fsutil.TruncWrite(filepath.Join(x.loc, "/.modified"), last_modified)
 	}
-	b := &bytes.Buffer{}
-	b.Write(res.Body())
-	defer b.Reset()
-	fasthttp.ReleaseResponse(res)
-	g_r, err := gzip.NewReader(b)
+	fs, err := fsutil.OpenFile(filepath.Join(x.loc, "/"+zk), os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0666)
 	if err != nil {
 		return err
 	}
-	defer g_r.Close()
-	if err := x.t_reader(tar.NewReader(g_r), key, filepath.Join(x.loc, "/"+key)); err != nil {
+	fs.Write(res.Body())
+	fs.Close()
+	fs, err = fsutil.OpenFile(filepath.Join(x.loc, "/"+zk), os.O_RDWR, 0666)
+	if err != nil {
+		return err
+	}
+	fasthttp.ReleaseResponse(res)
+	if err := x.t_reader(fs, key, filepath.Join(x.loc, "/"+key)); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (x *Maxm) t_reader(t *tar.Reader, key string, in string) error {
+func (x *Maxm) t_reader(r io.ReadCloser, key string, in string) error {
+	g_r, err := gzip.NewReader(r)
+	if err != nil {
+		return err
+	}
+	defer g_r.Close()
+	defer r.Close()
+	t := tar.NewReader(g_r)
 	for {
 		// Read the next header from the tar archive
 		header, err := t.Next()
@@ -146,20 +165,24 @@ func (x *Maxm) t_reader(t *tar.Reader, key string, in string) error {
 		if header.Typeflag != tar.TypeReg {
 			continue
 		}
-		if header.Name != key {
+
+		if !bms.Find(header.Name, key) {
 			continue
 		}
 
 		// Read the contents of the file
-		of, err := fsutil.OpenFile(in, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0777)
+		of, err := fsutil.OpenFile(in, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0666)
 		if err != nil {
 			return err
 		}
-		_, err = io.Copy(of, t)
+		d, err := fsutil.ReadAll(t)
 		if err != nil {
 			return err
 		}
+		of.Write(d)
+		of.Close()
 		break
 	}
+
 	return nil
 }

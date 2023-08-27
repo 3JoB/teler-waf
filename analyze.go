@@ -3,6 +3,7 @@ package teler
 import (
 	"errors"
 	"fmt"
+	"net"
 	"net/url"
 	"strings"
 
@@ -115,6 +116,31 @@ func (t *Teler) checkCustomRules(c *atreugo.RequestCtx) error {
 	headers := t.env.GetRequestValue("Headers")
 	uri := t.env.GetRequestValue("URI")
 	body := t.env.GetRequestValue("Body")
+
+	// Get the client's IP address
+	clientIP := t.env.GetRequestValue("IP")
+
+	// Check if the client's IP address is in the cache
+	if err, ok := t.getCache(clientIP); ok {
+		return err
+	}
+
+	if (t.opt.MaxMind != MaxMind{}) {
+		if t.opt.MaxMind.Install {
+		}
+
+	}
+
+	nip := net.ParseIP(clientIP)
+
+	var asn ASN
+	var city City
+
+	t.threat.MaxM.City.Lookup(nip, &city)
+	t.threat.MaxM.ASN.Lookup(nip, &asn)
+
+	t.log.Info().Any("ASN", asn)
+	t.log.Info().Any("City", city)
 
 	// Check if the request is in cache
 	key := headers + uri + body
