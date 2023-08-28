@@ -49,7 +49,25 @@ func (t *Teler) setDSLRequestEnv(c *atreugo.RequestCtx) {
 		"Headers": headers,
 		"Body":    body,
 		"Method":  unsafeConvert.StringSlice(c.Method()),
+		"Remote":  unsafeConvert.StringSlice(c.Request.Header.Peek("Remote-Host")),
 		"IP":      realip.FromRequest(c),
+	}
+
+	if (t.opt.MaxMind != MaxMind{}) {
+		if t.opt.MaxMind.Install {
+			asn, city := t.setMmdb(c)
+			if city != nil {
+				t.env.Requests["DB"] = map[string]any{
+					"City":    city.City.Names,
+					"Country": city.Country,
+					"Continent": city.Continent,
+					"ASN": map[string]any{
+						"Code": asn.AutonomousSystemNumber,
+						"Org":  asn.AutonomousSystemOrganization,
+					},
+				}
+			}
+		}
 	}
 }
 

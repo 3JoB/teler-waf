@@ -29,6 +29,35 @@ func (t *Teler) Analyze(c *atreugo.RequestCtx) error {
 	return err
 }
 
+func (t *Teler) setMmdb(c *atreugo.RequestCtx) (*ASN, *City) {
+	// Get the client's IP address
+	clientIP := t.env.GetRequestValue("IP")
+
+	// Check if the client's IP address is in the cache
+	if _, ok := t.getCache(clientIP); ok {
+		return nil, nil
+	}
+
+	if (t.opt.MaxMind != MaxMind{}) {
+		if t.opt.MaxMind.Install {
+			nip := net.ParseIP(clientIP)
+
+			var (
+				asn  ASN
+				city City
+			)
+
+			t.threat.MaxM.City.Lookup(nip, &city)
+			t.threat.MaxM.ASN.Lookup(nip, &asn)
+			return &asn, &city
+			// They are temporary Debug methods and will be removed soon.
+			//t.log.Info().Any("ASN", asn).Msg("asn msg")
+			//t.log.Info().Any("City", city).Msg("city msg")
+		}
+	}
+	return nil, nil
+}
+
 /*
 analyzeRequest checks an incoming HTTP request for certain types of threats or vulnerabilities.
 If a threat is detected, the function returns an error and the request is stopped from continuing through the middleware chain.
@@ -116,32 +145,6 @@ func (t *Teler) checkCustomRules(c *atreugo.RequestCtx) error {
 	headers := t.env.GetRequestValue("Headers")
 	uri := t.env.GetRequestValue("URI")
 	body := t.env.GetRequestValue("Body")
-
-	// Get the client's IP address
-	clientIP := t.env.GetRequestValue("IP")
-
-	// Check if the client's IP address is in the cache
-	if err, ok := t.getCache(clientIP); ok {
-		return err
-	}
-
-	if (t.opt.MaxMind != MaxMind{}) {
-		if t.opt.MaxMind.Install {
-			nip := net.ParseIP(clientIP)
-
-			var (
-				asn  ASN
-				city City
-			)
-
-			t.threat.MaxM.City.Lookup(nip, &city)
-			t.threat.MaxM.ASN.Lookup(nip, &asn)
-
-			// They are temporary Debug methods and will be removed soon.
-			t.log.Info().Any("ASN", asn).Msg("asn msg")
-			t.log.Info().Any("City", city).Msg("city msg")
-		}
-	}
 
 	// Check if the request is in cache
 	key := headers + uri + body
