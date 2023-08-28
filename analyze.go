@@ -129,8 +129,10 @@ func (t *Teler) checkCustomRules(c *atreugo.RequestCtx) error {
 		if t.opt.MaxMind.Install {
 			nip := net.ParseIP(clientIP)
 
-			var asn ASN
-			var city City
+			var (
+				asn  ASN
+				city City
+			)
 
 			t.threat.MaxM.City.Lookup(nip, &city)
 			t.threat.MaxM.ASN.Lookup(nip, &asn)

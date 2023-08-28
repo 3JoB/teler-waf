@@ -3,7 +3,7 @@ module github.com/3JoB/teler-waf
 go 1.21.0
 
 require (
-	github.com/3JoB/atreugo-realip v0.0.1
+	github.com/3JoB/atreugo-realip v0.0.2
 	github.com/3JoB/maxminddb-golang v0.0.1
 	github.com/3JoB/ulib v1.31.0
 	github.com/3JoB/unsafeConvert v1.5.0
