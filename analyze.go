@@ -51,8 +51,8 @@ func (t *Teler) setMmdb(c *atreugo.RequestCtx) (*ASN, *City) {
 			t.threat.MaxM.ASN.Lookup(nip, &asn)
 			return &asn, &city
 			// They are temporary Debug methods and will be removed soon.
-			//t.log.Info().Any("ASN", asn).Msg("asn msg")
-			//t.log.Info().Any("City", city).Msg("city msg")
+			// t.log.Info().Any("ASN", asn).Msg("asn msg")
+			// t.log.Info().Any("City", city).Msg("city msg")
 		}
 	}
 	return nil, nil

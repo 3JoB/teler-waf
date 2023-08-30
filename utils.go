@@ -58,9 +58,10 @@ func (t *Teler) setDSLRequestEnv(c *atreugo.RequestCtx) {
 			asn, city := t.setMmdb(c)
 			if city != nil {
 				t.env.Requests["DB"] = map[string]any{
-					"City":    city.City.Names,
-					"Country": city.Country,
-					"Continent": city.Continent,
+					"IsInEuropeanUnion": city.Country.IsInEuropeanUnion,
+					"City":              city.City.Names,
+					"Country":           city.Country.IsoCode,
+					"Continent":         city.Continent.Code,
 					"ASN": map[string]any{
 						"Code": asn.AutonomousSystemNumber,
 						"Org":  asn.AutonomousSystemOrganization,
