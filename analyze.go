@@ -94,7 +94,7 @@ func (t *Teler) analyzeRequest(c *atreugo.RequestCtx) (threat.Threat, error) {
 	t.setDSLRequestEnv(c)
 
 	// Check the request against custom rules
-	if err = t.checkCustomRules(c); err != nil {
+	if err := t.checkCustomRules(c); err != nil {
 		return threat.Custom, err
 	}
 

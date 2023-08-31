@@ -58,7 +58,7 @@ func (t *Teler) setDSLRequestEnv(c *atreugo.RequestCtx) {
 			asn, city := t.setMmdb(c)
 			if city != nil {
 				t.env.Requests["DB"] = map[string]any{
-					"IsAnonymousProxy": city.Traits.IsAnonymousProxy,
+					"IsAnonymousProxy":  city.Traits.IsAnonymousProxy,
 					"IsInEuropeanUnion": city.Country.IsInEuropeanUnion,
 					"City":              city.City.Names,
 					"Country":           city.Country.IsoCode,

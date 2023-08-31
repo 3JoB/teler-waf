@@ -43,8 +43,7 @@ func validateYAMLRules(fl validator.FieldLevel) bool {
 	validate := validator.New()
 
 	// Validate the yamlRule struct
-	err = validate.Struct(data)
-	return err == nil
+	return validate.Struct(data) == nil
 }
 
 func yamlToRule(file *os.File) (Rule, error) {
@@ -67,8 +66,7 @@ func yamlToRule(file *os.File) (Rule, error) {
 	}
 
 	// Unmarshal the YAML data into a slice of yamlRule structs
-	err = yaml.Unmarshal(yamlData, &yamlRules)
-	if err != nil {
+	if err := yaml.Unmarshal(yamlData, &yamlRules); err != nil {
 		return rule, fmt.Errorf(errUnmarshalYAML, err.Error())
 	}
 
@@ -124,8 +122,7 @@ func yamlToRule(file *os.File) (Rule, error) {
 		}
 
 		// Validate the yamlRule struct
-		err = validate.Struct(r)
-		if err != nil {
+		if err := validate.Struct(r); err != nil {
 			return rule, fmt.Errorf(errInvalidYAML, err.Error())
 		}
 	}

@@ -485,13 +485,11 @@ func (t *Teler) getResources() error {
 	// from the DB URL and uncompress it from Zstandard format, then extract the contents of
 	// each file from the tar archive and store them in a map indexed by their file name
 	if t.opt.InMemory {
-		req := fasthttp.AcquireRequest()
+		req, res := fasthttp.AcquireRequest(), fasthttp.AcquireResponse()
 		defer fasthttp.ReleaseRequest(req)
+		defer fasthttp.ReleaseResponse(res)
 		req.Header.SetMethod(fasthttp.MethodGet)
 		req.SetRequestURI(threat.DbURL)
-
-		res := fasthttp.AcquireResponse()
-		defer fasthttp.ReleaseResponse(res)
 
 		if err := fasthttp.Do(req, res); err != nil {
 			return err
@@ -586,8 +584,7 @@ func (t *Teler) getResources() error {
 		// Store the threat dataset contents in Threat struct as a string
 		t.threat.data[k] = unsafeConvert.StringSlice(b)
 
-		err = t.processResource(k)
-		if err != nil {
+		if err := t.processResource(k); err != nil {
 			return err
 		}
 	}
@@ -606,8 +603,7 @@ func (t *Teler) processResource(k threat.Threat) error {
 		t.threat.cwa = &cwa{}
 
 		// Unmarshal the data into the cwa field.
-		err = json.Unmarshal(unsafeConvert.ByteSlice(t.threat.data[k]), &t.threat.cwa)
-		if err != nil {
+		if err := json.Unmarshal(unsafeConvert.ByteSlice(t.threat.data[k]), &t.threat.cwa); err != nil {
 			return err
 		}
 
@@ -648,7 +644,7 @@ func (t *Teler) processResource(k threat.Threat) error {
 			// Iterate over the requests in the template.
 			for _, req := range tpl.GetArray("requests") {
 				// Determine CVE ID of current requests.
-				id := string(tpl.GetStringBytes("id"))
+				id := unsafeConvert.StringSlice(tpl.GetStringBytes("id"))
 
 				// Determine the kind of template (either "path" or "raw").
 				switch {
