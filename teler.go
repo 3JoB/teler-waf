@@ -35,6 +35,7 @@ import (
 	"time"
 
 	"github.com/3JoB/maxminddb-golang"
+	"github.com/3JoB/ulib/fsutil/null"
 	"github.com/3JoB/unsafeConvert"
 	"github.com/antonmedv/expr/vm"
 	"github.com/dlclark/regexp2"
@@ -49,7 +50,6 @@ import (
 
 	"github.com/3JoB/teler-waf/dsl"
 	"github.com/3JoB/teler-waf/maxm"
-	"github.com/3JoB/teler-waf/null"
 	"github.com/3JoB/teler-waf/request"
 	"github.com/3JoB/teler-waf/threat"
 )

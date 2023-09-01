@@ -193,8 +193,8 @@ github.com/3JoB/go-reflect v1.0.2 h1:1vjO7yj0k9Hr4pAKh2ngQ5nKHSqeJJmMlSr8MRmau7o
 github.com/3JoB/go-reflect v1.0.2/go.mod h1:+y2dG7y2l5DPG6Vsl2xFGxVysLfjnuJKCeSCd6RwISA=
 github.com/3JoB/maxminddb-golang v0.0.1 h1:IErS1vTCzydx80kJ4iaLs/i474Hi1AQOfkKITBGF1QU=
 github.com/3JoB/maxminddb-golang v0.0.1/go.mod h1:274CDriWJ8lmpkFyxmyKEffnVzwVAzEqupf5nKIP9RY=
-github.com/3JoB/ulib v1.31.0 h1:vylKAk7wuxH5mChe8GM/U0gDap1gVCL9OYWCMj5icd4=
-github.com/3JoB/ulib v1.31.0/go.mod h1:5Yh9NGxmsH76MN/RI0OL4k84NlMfyDGYswyTXJ+4cWg=
+github.com/3JoB/ulib v1.32.0 h1:p57TEdDpA4R3slg1ARAw6lqlE7Rwey3Q2nhaQQJqdNA=
+github.com/3JoB/ulib v1.32.0/go.mod h1:PHHpvLGBN5+eSH7vC+kThW4HWfodX3qMVZ2Y4bRIvuU=
 github.com/3JoB/unsafeConvert v1.5.0 h1:zZGo8G/+yQu2h53GR2h0T+0VlD1uXEZgZIBH5ehjTgk=
 github.com/3JoB/unsafeConvert v1.5.0/go.mod h1:eSOZxiCOcyEi0vBO56ULYtfXJEn4vafvkebEfI0pYoE=
 github.com/3JoB/validator v0.0.1 h1:xmrGEzYuDh/ug799/UcfPe8hLwPWN5Dh7r3kPqTRC80=
