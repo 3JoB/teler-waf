@@ -35,4 +35,11 @@ cover: ## Runs the tests and check & view the test coverage
 	go tool cover -func=$(FILE)
 
 cover-all: TARGET := ./...
+
 cover-all: cover
+
+licensing:
+	go-license --config .github/license.yaml $(ARGS) *.go **/*.go
+
+license-verify: ARGS := --verify
+license-verify: licensing

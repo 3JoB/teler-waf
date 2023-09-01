@@ -1,8 +1,14 @@
+// Copyright Dwi Siswanto and/or licensed to Dwi Siswanto under one
+// or more contributor license agreements. Licensed under the Elastic License 2.0;
+// you may not use this file except in compliance with the Elastic License 2.0.
+// See the LICENSE-ELASTIC file in the project root for more information.
+
 package teler
 
 import (
 	"errors"
 	"html"
+	"net/url"
 	"strings"
 
 	realip "github.com/3JoB/atreugo-realip"
@@ -12,6 +18,7 @@ import (
 	"github.com/savsgio/atreugo/v11"
 	"github.com/twharmon/gouid"
 	"gitlab.com/golang-commonmark/mdurl"
+	"golang.org/x/net/publicsuffix"
 
 	"github.com/3JoB/teler-waf/request"
 	"github.com/3JoB/teler-waf/threat"
@@ -230,4 +237,26 @@ func (t *Teler) error(level int, msg string) {
 		// case zapcore.FatalLevel:
 		// 	log.Fatal(msg)
 	}
+}
+
+// isValidReferrer checks if a given referrer URL is a valid domain.
+// It returns a boolean indicating validity, the extracted hostname,
+// and an error if parsing or processing fails.
+func isValidReferrer(ref string) (bool, string, error) {
+	u, err := url.Parse(ref)
+	if err != nil {
+		return false, "", err
+	}
+
+	host := u.Hostname()
+	if host == "" {
+		return false, host, nil
+	}
+
+	eTLD, icann := publicsuffix.PublicSuffix(host)
+	if icann || strings.IndexByte(eTLD, '.') >= 0 {
+		return true, host, nil
+	}
+
+	return false, host, nil
 }

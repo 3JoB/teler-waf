@@ -1,3 +1,8 @@
+// Copyright Dwi Siswanto and/or licensed to Dwi Siswanto under one
+// or more contributor license agreements. Licensed under the Elastic License 2.0;
+// you may not use this file except in compliance with the Elastic License 2.0.
+// See the LICENSE-ELASTIC file in the project root for more information.
+
 package teler
 
 import (
@@ -431,27 +436,26 @@ func (t *Teler) checkBadIPAddress() error {
 	return nil
 }
 
-// checkBadReferrer checks if the request referer header is from a known bad referer.
-// It does this by parsing the referer URL, extracting the hostname, and then finding the effective top-level domain plus one.
-// The resulting domain is then checked against the BadReferrer index in the threat struct.
-// If the domain is found in the index, an error indicating a bad HTTP referer is returned.
-// Otherwise, nil is returned.
+// It does this by parsing and validate the referer URL, and then finding the effective
+// top-level domain plus one. The resulting domain is then checked against the BadReferrer
+// index in the threat struct. If the domain is found in the index, an error indicating a
+// bad HTTP referer is returned. Otherwise, nil is returned.
 func (t *Teler) checkBadReferrer(c *atreugo.RequestCtx) error {
 	// Parse the request referer URL
 
-	ref, err := url.Parse(unsafeConvert.StringSlice(c.Referer()))
+	valid, ref, err := isValidReferrer(unsafeConvert.StringSlice(c.Referer()))
 	if err != nil {
 		t.error(0, err.Error())
 		return nil
 	}
 
-	// Return early if hostname of the HTTP referrer is empty
-	if ref.Hostname() == "" {
+	// Return early if TLD hostname is invalid
+	if !valid {
 		return nil
 	}
 
 	// Extract the effective top-level domain plus one from the hostname of the referer URL
-	eTLD1, err := publicsuffix.EffectiveTLDPlusOne(ref.Hostname())
+	eTLD1, err := publicsuffix.EffectiveTLDPlusOne(ref)
 	if err != nil {
 		t.error(0, err.Error())
 		return nil
